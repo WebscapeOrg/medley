@@ -1,0 +1,15 @@
+id = "medley"
+name = "Medley"
+version = "0.1.0"
+min_herdr_version = "0.9.1"
+description = "Choose a sound for every workspace and status"
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "settings"
+title = "Medley sound settings"
+command = ["python3", "medley.py", "settings"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["python3", "medley.py", "event"]
