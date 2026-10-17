@@ -1,0 +1,7 @@
+Medley
+Copyright 2026 Medley contributors
+
+assets/done.mp3 and assets/request.mp3 are copied from herdr v0.9.3:
+https://github.com/herdrdev/herdr/tree/v0.9.3/assets/sounds
+Herdr contributors, Apache License 2.0. See LICENSE.
+No user-provided notification audio or local configuration is included in this repository.

@@ -1,0 +1,8 @@
+{
+  "name": "medley-herdr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser validation tooling for Medley; not needed to run the plugin",
+  "scripts": {"test": "node tests/browser.cjs"},
+  "devDependencies": {"playwright": "^1.58.0"}
+}
