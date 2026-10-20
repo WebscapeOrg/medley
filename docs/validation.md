@@ -82,3 +82,33 @@ Control-and-feedback checks:
 7. Longer operations: preview uses the existing busy state; no new long operation.
 8. Navigation: no navigation changes; reload persistence passed browser validation.
 Vendored-block contract: not applicable; no vendored layout block was extended.
+
+## Immediate import and sound labels — 2026-10-20
+
+File selection now imports immediately; cancelling an empty picker does nothing.
+Dropdown labels strip only the final .mp3 suffix, case-insensitively; stored names
+and audio IDs remain unchanged. The separate import button was removed.
+All 11 Python tests and Chromium browser validation passed, including immediate
+import, extension-free labels, invalid-file feedback, playback, and reload persistence.
+Security: PASS for unchanged token rejection checks and existing upload validation.
+
+Input-and-interaction checks:
+1. Prevention: file type/20 MB checks retained before upload; busy controls prevent repeats.
+2. Recovery: invalid selection shows the existing actionable MP3 error and preserves input.
+3. Standard controls: native labelled file input and native dropdown retained; keyboard check passed.
+4. Platform conventions: selecting a file performs the explicitly described import; redundant button removed.
+5. Reuse: dropdown uses existing library IDs; no re-entry of names required.
+6. Reset/clear: no new reset/clear controls; existing sound-rule reset and undo unchanged and tested.
+7. Password inspection: not applicable; no password entry.
+8. Selection meaning: dropdown remains a single choice among library sounds, default and quiet.
+No vendored block was extended. Desktop/mobile screenshots use synthetic fixtures.
+
+Control-and-feedback checks for immediate import:
+1. Status: existing busy state followed by import confirmation.
+2. Control: native picker can be cancelled without an import; no new modal.
+3. Prevention: validation and disabled controls retained during the request.
+4. Recovery: invalid-file error tested; subsequent refresh succeeds.
+5. Error impact: existing library/rules remain intact on validation failure.
+6. Timing: immediate existing busy feedback during file read/upload.
+7. Progress: bounded 20 MB upload uses existing busy state; no new long-running action.
+8. Navigation: reload persistence and normal keyboard navigation passed.

@@ -26,9 +26,9 @@ The settings command prints a private localhost URL and opens it in your browser
 
 ## Choose your sounds
 
-1. Import an MP3, up to 20 MB. Medley validates the audio and copies it into its private library, so moving or deleting the original does not break playback.
+1. Choose an MP3, up to 20 MB; it imports immediately without another button press. Medley validates the audio and copies it into its private library, so moving or deleting the original does not break playback.
 2. Choose a workspace. Each of its five statuses has a separate audio selection.
-3. Select a library file, **None · quiet**, or **Default**. Changes save immediately.
+3. Select a library file (displayed without its .mp3 extension), **None · quiet**, or **Default**. Changes save immediately.
 4. Use **Preview** to play the selected sound immediately in your browser. The audio controls remain available to stop or replay it. Silent selections are identified as quiet; if the browser blocks playback, use Play in the controls to retry. **Reset** restores one cell; **Reset all to default** restores every workspace and offers Undo until settings closes or another reset replaces it.
 
 The statuses are Idle, Working, Needs attention (herdr's `blocked`), Done, and Unknown. Rules use herdr's workspace IDs, so renaming a workspace retains its choices. Recreating a deleted workspace or using a different herdr session does not transfer choices automatically. Keep a separate plugin config directory per independent session.

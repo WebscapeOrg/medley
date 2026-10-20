@@ -29,7 +29,7 @@ function drawRules() {
     const label = document.createElement('label'); label.htmlFor = 'status-' + status;
     label.textContent = ({idle:'Idle',working:'Working',blocked:'Needs attention',done:'Done',unknown:'Unknown'})[status];
     const select = document.createElement('select'); select.id = label.htmlFor;
-    select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.map(audio => option(audio.id,audio.name)));
+    select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.map(audio => option(audio.id,audio.name.replace(/\.mp3$/i,''))));
     select.value = model.settings.rules[workspace]?.[status] || 'default';
     select.onchange = () => run('Sound saved.', async () => {await request('/rule',{workspace,status,choice:select.value}); await load();});
     const preview = document.createElement('button'); preview.textContent = 'Preview'; preview.setAttribute('aria-label','Preview ' + label.textContent + ' sound');
@@ -62,10 +62,13 @@ $('refresh').onclick = () => run('Workspaces refreshed.',load);
 $('enabled').onchange = () => run('Playback setting saved.',async () => {await request('/enabled',{enabled:$('enabled').checked});await load();});
 $('reset').onclick = () => run('All sounds reset to default. You can undo this reset.',async () => {savedRules = structuredClone(model.settings.rules);await request('/reset',{});await load();$('undo').hidden = false;});
 $('undo').onclick = () => run('Previous sound choices restored.',async () => {await request('/restore',{rules:savedRules});await load();$('undo').hidden = true;});
-$('import').onclick = () => run('Audio imported. Select it for any status below.',async () => {
+$('upload').onchange = () => {
+  if (!$('upload').files.length) return;
+  return run('Audio imported. Select it for any status below.',async () => {
   const file = $('upload').files[0];
   if (!file || !file.name.toLowerCase().endsWith('.mp3') || file.size > 20*1024*1024) throw new Error('Choose an MP3 file up to 20 MB.');
   const content = await new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result.split(',')[1]);reader.onerror = () => reject(new Error('The file could not be read.'));reader.readAsDataURL(file);});
   await request('/upload',{name:file.name,content});$('upload').value = '';await load();
-});
+  });
+};
 run('Settings ready. Changes save immediately.',load);
