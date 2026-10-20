@@ -21,6 +21,18 @@ assert.equal(await page.locator('#library-files').isVisible(),false);
 await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
 const columns=await page.evaluate(()=>{const left=document.querySelector('section[aria-labelledby="rules-heading"]').getBoundingClientRect();const right=document.querySelector('section[aria-labelledby="library-heading"]').getBoundingClientRect();return {left:left.x,right:right.x,gap:right.x-left.right,topDifference:Math.abs(left.y-right.y)};});
 assert.ok(columns.right>columns.left);assert.equal(columns.gap,20);assert.equal(columns.topDifference,0);
+await page.evaluate(()=>{model.audio=Array.from({length:7},(_,i)=>({id:'example'+i,name:'Example sound '+i+(i===2?' with a longer label that wraps':'')}));drawLibrary();});
+async function checkAlignedRows() {
+  const differences=await page.evaluate(()=>{const left=[...document.querySelectorAll('.workspace-row,.rule')].map(el=>el.getBoundingClientRect());const right=[...document.querySelectorAll('.library-file')].map(el=>el.getBoundingClientRect());return left.map((row,i)=>Math.max(Math.abs(row.y-right[i].y),Math.abs(row.height-right[i].height)));});
+  assert.ok(differences.every(delta=>delta<1),JSON.stringify(differences));
+}
+for (const width of [1200,1280,1600]) {await page.setViewportSize({width,height:1000});await checkAlignedRows();}
+await page.setViewportSize({width:1280,height:1000});
+await page.getByRole('button',{name:'Rename Example sound 0',exact:true}).click();await checkAlignedRows();
+await page.keyboard.press('Escape');
+await page.evaluate(()=>{document.documentElement.style.fontSize='125%';});await checkAlignedRows();
+await page.evaluate(()=>{document.documentElement.style.fontSize='';return load();});
+
 
 await page.getByRole('button',{name:'About Medley',exact:true}).click();
 assert.equal(await page.locator('#medley-help').isVisible(),true);
