@@ -33,7 +33,9 @@ await page.locator('#workspace').selectOption('w2');assert.equal(await page.loca
 await page.locator('#workspace').selectOption('w1');assert.equal(await page.locator('#status-done').inputValue(),'none');
 await page.getByRole('button',{name:'Reset all to default',exact:true}).click();await page.getByText('All sounds reset to default. You can undo this reset.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
 await page.getByRole('button',{name:'Undo reset',exact:true}).click();await page.getByText('Previous sound choices restored.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'none');
-await page.locator('#upload').setInputFiles('assets/done.mp3');await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
+const chooserReady=page.waitForEvent('filechooser');
+await page.getByRole('button',{name:'Import an audio file',exact:true}).click();
+await (await chooserReady).setFiles('assets/done.mp3');await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
 assert.equal(await page.locator('#status-done option').count(),3);
 assert.equal(await page.locator('#status-done option').last().textContent(),'done');
 assert.equal(await page.locator('#import').count(),0);
