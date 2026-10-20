@@ -109,3 +109,5 @@ $('uninstall').onclick = () => {
     document.querySelectorAll('section').forEach(section=>section.hidden=true);
   });
 };
+
+$('choose-audio').onclick = () => $('upload').click();

@@ -267,3 +267,10 @@ refreshed desktop capture visually inspected, mobile overflow check passed.
 Native file-input filename text is visually hidden, leaving the styled Choose File
 button. Its label, picker and immediate import behavior remain. Chromium suite
 passed with updated synthetic captures, including import/error and keyboard checks.
+
+## Import button label — 2026-10-20
+
+Removed Import audio heading. A native “Import an audio file” button opens the
+hidden native picker; selecting imports immediately. Browser validation opens the
+actual file chooser via this button, selects synthetic audio and verifies import.
+Full Chromium checks passed; captures refreshed. Keyboard semantics retained.
