@@ -13,3 +13,8 @@ command = ["python3", "medley.py", "settings"]
 [[events]]
 on = "pane.agent_status_changed"
 command = ["python3", "medley.py", "event"]
+
+[[actions]]
+id = "uninstall"
+title = "Uninstall Medley and restore sound"
+command = ["python3", "medley.py", "uninstall"]

@@ -64,6 +64,34 @@ class MedleyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 core.remove_audio(invalid)
 
+    def test_wav_import_converts_to_mp3(self):
+        import io
+        import wave
+        stream = io.BytesIO()
+        with wave.open(stream, 'wb') as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(16000)
+            wav.writeframes(b'\x00\x00' * 1600)
+        key = core.import_audio('example.WAV', stream.getvalue())
+        audio = core.config_dir() / 'audio' / (key + '.mp3')
+        result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'json', str(audio)], capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout)['streams'][0]['codec_name'], 'mp3')
+        self.assertEqual(core.library()[0]['name'], 'example.mp3')
+
+    def test_uninstall_restores_before_unregistering(self):
+        calls = []
+        with patch.object(core, 'activate', side_effect=lambda value: calls.append(('enabled', value))), patch.object(core.subprocess, 'run', side_effect=lambda *args, **kwargs: calls.append(args[0])):
+            core.uninstall()
+        self.assertEqual(calls[0], ('enabled', False))
+        self.assertEqual(calls[1][-3:], ['plugin', 'uninstall', 'medley'])
+
+    def test_failed_restore_prevents_uninstall(self):
+        with patch.object(core, 'activate', side_effect=ValueError('restore failed')), patch.object(core.subprocess, 'run') as command:
+            with self.assertRaises(ValueError):
+                core.uninstall()
+            command.assert_not_called()
+
     def test_invalid_import(self):
         for name, content in [('file.wav', b'x'), ('file.mp3', b''), ('file.mp3', b'invalid audio')]:
             with self.assertRaises(ValueError):

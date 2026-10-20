@@ -1,8 +1,8 @@
 # Medley
 
-Choose an audio file for each **herdr workspace × status**. Import MP3s into a reusable library, preview a choice, select **None** for quiet, or reset one choice or all choices to default.
+Choose an audio file for each **herdr workspace × status**. Import MP3s or WAVs into a reusable library, preview a choice, select **None** for quiet, or reset one choice or all choices to default.
 
-Medley is a local herdr plugin for Linux and macOS. Python 3.11+ and herdr 0.9.1+ are required. Install **ffmpeg** for MP3 validation and Linux playback; macOS uses `afplay` for playback and still requires ffmpeg for importing.
+Medley is a local herdr plugin for Linux and macOS. Python 3.11+ and herdr 0.9.1+ are required. Install **ffmpeg** for audio validation and WAV conversion and Linux playback; macOS uses `afplay` for playback and still requires ffmpeg for importing.
 
 ## Install
 
@@ -11,7 +11,7 @@ herdr plugin install dreinecke/medley
 herdr plugin action invoke medley.settings
 ```
 
-In settings, enable **Let Medley handle notification sounds**. This disables herdr's native sound playback to prevent duplicates. Turning Medley off restores the previous native sound-enabled setting. No herdr server restart is needed.
+In settings, use the **Enabled/Disabled** toggle. This disables herdr's native sound playback to prevent duplicates. Turning Medley off restores the previous native sound-enabled setting. No herdr server restart is needed.
 
 For a local checkout:
 
@@ -26,7 +26,7 @@ The settings command prints a private localhost URL and opens it in your browser
 
 ## Choose your sounds
 
-1. Choose an MP3, up to 20 MB; it imports immediately without another button press. Medley validates the audio and copies it into its private library, so moving or deleting the original does not break playback.
+1. Choose an MP3 or WAV, up to 20 MB; it imports immediately without another button press. Medley validates the audio, converts WAV to MP3 locally, and copies it into its private library, so moving or deleting the original does not break playback.
 2. Choose a workspace. Each of its five statuses has a separate audio selection.
 3. Select a library file (displayed without its .mp3 extension), **None · quiet**, or **Default**. Changes save immediately.
 4. Use **Preview** to play the selected sound immediately in your browser. The audio controls remain available to stop or replay it. Silent selections are identified as quiet; if the browser blocks playback, use Play in the controls to retry. **Reset** restores one cell; **Reset all to default** restores every workspace and offers Undo until settings closes or another reset replaces it.
@@ -47,14 +47,9 @@ The audio library and mappings stay outside the checkout under herdr's plugin co
 
 ## Disable or uninstall
 
-**First turn off Medley in its settings**, or run the following from the checkout using the same plugin config environment:
+Use **Uninstall Medley** in settings, or `herdr plugin action invoke medley.uninstall`, to restore the previous sound setting before unregistering the plugin. Imported audio and choices are retained. Restoration failure aborts uninstall.
 
-```sh
-python3 medley.py disable
-herdr plugin unlink medley
-```
-
-Unlinking or disabling the plugin directly cannot restore herdr's muted sound setting automatically. The original config backup is `herdr-config-before-medley.toml` in Medley's config directory; disabling normally changes only `ui.sound.enabled`, preserving subsequent unrelated edits. To recover manually, set `[ui.sound] enabled = true` in herdr's config and run `herdr server reload-config`.
+Unlinking, disabling or uninstalling through herdr’s standard plugin commands cannot restore herdr's muted sound setting automatically. The original config backup is `herdr-config-before-medley.toml` in Medley's config directory; disabling normally changes only `ui.sound.enabled`, preserving subsequent unrelated edits. To recover manually, set `[ui.sound] enabled = true` in herdr's config and run `herdr server reload-config`.
 
 ## Develop
 

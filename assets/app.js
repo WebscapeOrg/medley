@@ -77,7 +77,8 @@ async function load() {
   const selected = $('workspace').value;
   model = await request('/api');
   $('enabled').checked = model.settings.enabled;
-  $('library').textContent = model.audio.length ? model.audio.length + ' audio files available.' : 'Your library is empty. Import an MP3 to get started.';
+  $('enabled-label').textContent = model.settings.enabled ? 'Enabled' : 'Disabled';
+  $('library').textContent = model.audio.length ? model.audio.length + ' audio files available.' : 'Your library is empty. Import an MP3 or WAV to get started.';
   $('workspace').replaceChildren(...model.workspaces.map(w => option(w.workspace_id,w.label || w.workspace_id)));
   if (model.workspaces.some(w => w.workspace_id === selected)) $('workspace').value = selected;
   drawRules();
@@ -92,9 +93,19 @@ $('upload').onchange = () => {
   if (!$('upload').files.length) return;
   return run('Audio imported. Select it for any status below.',async () => {
   const file = $('upload').files[0];
-  if (!file || !file.name.toLowerCase().endsWith('.mp3') || file.size > 20*1024*1024) throw new Error('Choose an MP3 file up to 20 MB.');
+  if (!file || !(/\.(mp3|wav)$/i).test(file.name) || file.size > 20*1024*1024) throw new Error('Choose an MP3 or WAV file up to 20 MB.');
   const content = await new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result.split(',')[1]);reader.onerror = () => reject(new Error('The file could not be read.'));reader.readAsDataURL(file);});
   await request('/upload',{name:file.name,content});$('upload').value = '';await load();
   });
 };
 run('Settings ready. Changes save immediately.',load);
+
+$('uninstall').onclick = () => {
+  if (!confirm('Uninstall Medley? Herdr’s previous sound setting will be restored first. Your imported sounds and saved choices will be kept.')) return;
+  return run('Medley uninstalled. You can close this tab.',async () => {
+    await request('/uninstall',{});
+    $('player').pause();
+    $('enabled').checked=false; $('enabled-label').textContent='Disabled';
+    document.querySelectorAll('section').forEach(section=>section.hidden=true);
+  });
+};
