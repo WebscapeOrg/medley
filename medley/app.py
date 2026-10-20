@@ -81,9 +81,14 @@ def serve(open_browser=True, port=0):
                 elif self.path == '/upload':
                     core.import_audio(data['name'], base64.b64decode(data['content'], validate=True))
                 elif self.path == '/preview':
-                    if data['status'] not in core.STATUSES:
-                        raise ValueError('Choose a valid status')
-                    path = core.resolve(core.settings(), data['workspace'], data['status'])
+                    if 'id' in data:
+                        if data['id'] not in {audio['id'] for audio in core.library()}:
+                            raise ValueError('This sound is no longer in the library. Refresh and try again.')
+                        path = core.config_dir() / 'audio' / (data['id'] + '.mp3')
+                    else:
+                        if data['status'] not in core.STATUSES:
+                            raise ValueError('Choose a valid status')
+                        path = core.resolve(core.settings(), data['workspace'], data['status'])
                     if path is None:
                         self.reply(200, {'quiet': True})
                     else:

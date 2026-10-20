@@ -366,3 +366,55 @@ Block contract: no vendored block. Existing library row relies on two flex child
 (name and actions). Rename/Remove stay inside a single action group; editor replaces
 row contents with one full-width form. Rendered desktop/mobile checks confirm the
 12px action gap and wrapping, rather than adding a third distributed flex child.
+
+## Library heading, My workspaces and per-sound previews — 2026-10-20
+
+The My Sounds heading now uses the same two-part heading/actions structure as
+My workspaces. Its buttons align at the right on desktop and wrap on mobile.
+Workspace sounds is renamed My workspaces. Library rows add Preview before
+Rename/Remove, sharing the existing browser audio player and playback-error path.
+No assignments are changed by previewing. The pending message says Loading preview.
+
+Security: PASS for affected boundaries. The authenticated preview endpoint accepts
+an imported ID only after exact membership validation; unknown/traversal IDs return
+400, unauthenticated requests return 403. Audio is returned from the private imported
+copy into the existing browser blob player; no remote fetch, shell or herdr config
+mutation is introduced. Browser integration verifies actual playback advances and
+selected rules remain unchanged. Existing autoplay-denial recovery still passes.
+
+16 Python tests and the Chromium browser suite passed. Synthetic matching desktop
+before/after captures (1280px, light, normal scale) and 390px light/dark captures
+are in `/tmp/medley-heading-evidence/`, outside source. Desktop and dark mobile
+captures were visually inspected; tests also check no horizontal overflow at 320px.
+
+Scoped skill checks (check → evidence/action → result):
+
+| Lens/check | Evidence and resulting state |
+| --- | --- |
+| Aesthetic: minimalism | Only requested heading placement/name and Preview action added; no new explanatory chrome. |
+| Aesthetic: controls/icons | Preview is a native text button with sound-specific accessible name. |
+| Aesthetic: motion | No animation added; reduced-motion dark capture remains static. |
+| Aesthetic: scannability | Shared heading/actions grouping, 12px gaps, two-child library rows retained. |
+| Aesthetic: legibility | Existing inherited font/theme colors and focus outline retained; light/dark rendered captures inspected. |
+| Aesthetic: accessibility | Keyboard Enter starts preview; native labels and player controls retained. Screen-reader speech not independently tested. |
+| Input: prevention | Preview cannot change assignments; selected ID validated server-side. |
+| Input: error recovery | Existing browser playback-denial test passes and provides Play-control recovery. |
+| Input: standard controls | Native buttons, keyboard activation, visible focus; no custom click targets. |
+| Input: action conventions | Preview precedes Rename/Remove inside one grouped action container. |
+| Input: known information | Preview identifies the row’s existing audio ID; no re-selection required. |
+| Input: Reset/Clear | No Reset or Clear added to the library flow. |
+| Input: password visibility | No credential field introduced; not applicable. |
+| Input: selection controls | Existing workspace/status selectors retained; Preview is an action button. |
+| Feedback: status | Loading preview appears while awaiting audio, followed by playing/error feedback. |
+| Feedback: freedom | Existing native audio controls allow pause/seek/replay; another preview replaces playback. |
+| Feedback: prevention | Existing pending-operation guard disables controls until completion. |
+| Feedback: recovery | Shared preview handler preserves existing playback-denial/error behavior. |
+| Feedback: error severity | No destructive side effect; browser test verifies unchanged assignment. |
+| Feedback: response thresholds | Immediate loading message, no fake percentage. |
+| Feedback: long operations | Existing request/error handling and native player reused; no new processing stage. |
+| Feedback: navigation | No route/history change or modal introduced; heading relocation preserves DOM controls. |
+
+Block contract: no vendored block. Heading remains two flex children (title/info,
+action group); library row remains name plus one action group. Grouped actions have
+12px gaps and a 100% maximum width so three buttons can wrap at 320px. Desktop and
+mobile rendered checks confirm these invariants.

@@ -9,6 +9,7 @@ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH ||
 const page=await browser.newPage({viewport:{width:1280,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(String(e)));
 const url=await ready;const base=url.split('/#')[0],token=url.split('/#')[1];
 assert.equal((await page.request.get(base+'/api')).status(),403);
+assert.equal((await page.request.post(base+'/preview',{data:{id:'anything'}})).status(),403);
 assert.equal((await page.request.post(base+'/rename',{data:{id:'anything',name:'New'}})).status(),403);
 assert.equal((await page.request.post(base+'/rule',{data:{workspace:'w1',status:'done',choice:'none'}})).status(),403);
 await page.addInitScript(()=>{window.showOpenFilePicker=undefined;});
@@ -58,6 +59,17 @@ await page.locator('#upload').setInputFiles({name:'invalid.txt',mimeType:'text/p
 await page.getByRole('button',{name:'Refresh workspaces',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
 await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
 await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
+assert.equal(await page.getByRole('heading',{name:'My workspaces',exact:true}).isVisible(),true);
+const rulesBeforePreview=await page.locator('#status-done').inputValue();
+assert.equal((await page.request.post(base+'/preview',{headers:{'X-Medley-Token':token},data:{id:'../escape'}})).status(),400);
+await page.getByRole('button',{name:'Preview done',exact:true}).focus();await page.keyboard.press('Enter');
+await page.getByText('Playing preview. Use the audio controls to stop.',{exact:true}).waitFor();
+await page.waitForFunction(()=>!document.getElementById('player').paused && document.getElementById('player').currentTime>0);
+assert.equal(await page.locator('#status-done').inputValue(),rulesBeforePreview);
+await page.evaluate(()=>document.getElementById('player').pause());
+await page.setViewportSize({width:320,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+await page.setViewportSize({width:1280,height:1000});
+
 await page.getByRole('button',{name:'Rename done',exact:true}).focus();await page.keyboard.press('Enter');
 assert.equal(await page.getByRole('textbox',{name:'Sound name',exact:true}).inputValue(),'done');
 await page.getByRole('textbox',{name:'Sound name',exact:true}).fill('Canceled');await page.keyboard.press('Escape');
