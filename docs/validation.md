@@ -232,3 +232,10 @@ popover supplies Escape and light-dismiss behavior. Chromium explicitly checks
 initially hidden, click-to-open and Escape dismissal; 15 Python tests also pass.
 Existing keyboard checks and mobile overflow checks pass. Synthetic captures updated.
 No extra always-visible prose, modal trap, custom keyboard handler or new endpoint.
+
+## Workspace sounds info popup — 2026-10-20
+
+Workspace guidance moved unchanged behind a matching named i button beside its
+heading. Both help popovers share theme styling. Chromium browser checks passed,
+including opening and Escape dismissal of each popup, import, removal, playback,
+uninstall fixture, keyboard and mobile overflow checks. Synthetic captures refreshed.
