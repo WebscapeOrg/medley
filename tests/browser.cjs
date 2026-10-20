@@ -15,6 +15,13 @@ assert.equal((await page.request.post(base+'/rule',{data:{workspace:'w1',status:
 await page.addInitScript(()=>{window.showOpenFilePicker=undefined;});
 await page.goto(base+'/#'+token);await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);
 assert.equal(await page.locator('.rule').count(),5);
+assert.equal(await page.locator('#manage-library').getAttribute('aria-expanded'),'true');
+await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
+assert.equal(await page.locator('#library-files').isVisible(),false);
+await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
+const columns=await page.evaluate(()=>{const left=document.querySelector('section[aria-labelledby="rules-heading"]').getBoundingClientRect();const right=document.querySelector('section[aria-labelledby="library-heading"]').getBoundingClientRect();return {left:left.x,right:right.x,gap:right.x-left.right,topDifference:Math.abs(left.y-right.y)};});
+assert.ok(columns.right>columns.left);assert.equal(columns.gap,20);assert.equal(columns.topDifference,0);
+
 await page.getByRole('button',{name:'About Medley',exact:true}).click();
 assert.equal(await page.locator('#medley-help').isVisible(),true);
 await page.keyboard.press('Escape');assert.equal(await page.locator('#medley-help').isVisible(),false);
@@ -58,8 +65,8 @@ await page.getByRole('button',{name:'Reset Done to default',exact:true}).click()
 await page.locator('#upload').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid')});await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
 await page.getByRole('button',{name:'Refresh workspaces',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
 await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
-await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
-assert.equal(await page.getByRole('heading',{name:'My workspaces',exact:true}).isVisible(),true);
+assert.equal(await page.locator('#library-files').isVisible(),true);
+assert.equal(await page.getByRole('heading',{name:'My Workspaces',exact:true}).isVisible(),true);
 const rulesBeforePreview=await page.locator('#status-done').inputValue();
 assert.equal((await page.request.post(base+'/preview',{headers:{'X-Medley-Token':token},data:{id:'../escape'}})).status(),400);
 await page.getByRole('button',{name:'Preview done',exact:true}).focus();await page.keyboard.press('Enter');

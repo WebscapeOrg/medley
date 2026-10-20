@@ -418,3 +418,41 @@ Block contract: no vendored block. Heading remains two flex children (title/info
 action group); library row remains name plus one action group. Grouped actions have
 12px gaps and a 100% maximum width so three buttons can wrap at 320px. Desktop and
 mobile rendered checks confirm these invariants.
+
+
+## Side-by-side workspace and sound panels — 2026-10-20
+
+My Workspaces uses matching title capitalization. The library starts expanded,
+with `aria-expanded=true` matching the visible list; its existing toggle still
+collapses/reopens it. DOM order is Workspaces then Sounds, matching desktop left/
+right and narrow-screen top/bottom order. A two-column grid applies from 1200px;
+below that it stacks, preserving usable selector/action widths. Main width grows
+to 1600px to accommodate both panels. Settings stays above the two panels.
+
+Validation: 16 Python tests and Chromium browser suite passed. Browser checks
+assert initial expansion and toggle behavior, side-by-side positions, aligned top
+edges and a 20px inter-panel gap. Existing preview, rename, remove, import,
+settings and uninstall fixture flows pass; 320px overflow check passes. Matching
+1280px light before/after and 390px mobile light/dark captures are scratch evidence
+at `/tmp/medley-columns-evidence/`; after desktop and dark mobile were inspected.
+Security: PASS for scope: HTML/CSS/default disclosure only, no API, credentials,
+network, file storage or playback boundary changed.
+
+Aesthetic-and-clear check-by-check review:
+
+1. Minimalism: existing two panels and controls retained, rearranged as requested.
+2. Standard controls: existing native toggle button and labeled inputs retained;
+   expanded state matches actual visibility on initial load and after toggling.
+3. Motion: no new animation; dark capture uses reduced-motion preference.
+4. Scannability: consistent My Workspaces/My Sounds titles, 20px panel gap and
+   shared top alignment; existing 12px action gaps retained.
+5. Legibility: existing scalable body/control type and theme colors retained;
+   panels stack before their content becomes cramped. Desktop/mobile captures
+   visually checked; no horizontal overflow at 320px.
+6. Accessibility/task completion: DOM order matches visual order; expanded library
+   exposes native buttons immediately. Existing keyboard preview/rename/cancel
+   flows pass. Screen-reader speech was not independently tested.
+
+Block contract: no vendored block. New grid contains exactly the two existing
+sections; heading/action and library-row child grouping remain unchanged. Rendered
+position assertions confirm desktop columns; mobile capture confirms stacking.

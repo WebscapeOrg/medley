@@ -37,7 +37,7 @@ A workspace may contain several agents. Medley reads herdr's **combined workspac
 
 Default follows herdr's configured `done_path` / `request_path`, then `path`. If no usable custom file exists, Medley uses herdr's bundled completion or attention clip. Idle and Done use completion; Needs attention uses attention; Working and Unknown are quiet. Explicit selections can add audio to any status.
 
-Use **Manage imported sounds** to view the library, preview any sound in the browser, rename it with Save/Cancel, or remove it. Renaming updates the display name everywhere while keeping audio and assignments intact. The import picker starts in Downloads in browsers supporting the File System Access picker (including desktop Chromium); other browsers use their normal file picker. Removal asks for confirmation and resets every workspace/status using that sound to Default. It removes only Medley’s imported copy, not the original file.
+The **My Sounds** library is expanded by default, beside **My Workspaces** on wide screens (and below it on narrow screens). **Manage imported sounds** toggles the list. Use the list to preview any sound in the browser, rename it with Save/Cancel, or remove it. Renaming updates the display name everywhere while keeping audio and assignments intact. The import picker starts in Downloads in browsers supporting the File System Access picker (including desktop Chromium); other browsers use their normal file picker. Removal asks for confirmation and resets every workspace/status using that sound to Default. It removes only Medley’s imported copy, not the original file.
 
 ## Where audio plays
 
