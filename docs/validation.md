@@ -285,3 +285,11 @@ against the current handler and verifies removal/default reset. All 15 Python te
 and Chromium checks passed. Library actions use a wrapping flex row with 12 px gap;
 refreshed desktop capture visually inspected and mobile overflow check passed.
 No real sound was deleted for verification. Fresh settings server opened afterward.
+
+## Section labels and consistent controls — 2026-10-20
+
+Renamed first-box Medley to Settings and Audio library to My Sounds. Toolbar
+buttons now use the same 12 px gap as Preview/Reset. Info buttons and glyphs
+reduced 25%: 32 to 24 px diameter, 17 to 12.75 px type. Native button semantics
+and focus ring retained. Chromium checks passed, synthetic captures refreshed,
+and desktop visually inspected. Mobile overflow and popup keyboard tests passed.
