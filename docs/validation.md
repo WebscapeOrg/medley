@@ -208,3 +208,11 @@ manual screen-reader and magnification testing not performed.
 Vendored block contract: none. Security: PASS for authenticated endpoint routing,
 argv subprocess execution, audio validation and bounded conversion; no cloud upload
 or new network boundary. Actual live uninstall deliberately not exercised.
+
+## Header copy — 2026-10-20
+
+Header now contains only “Medley” and “A sound for every herdr workspace and status.”
+Removed the eyebrow and initial ready message. Feedback stays hidden on initial
+load and reload, then appears for user actions; initial load errors still surface.
+15 Python checks and Chromium browser checks passed, including hidden initial
+feedback assertions. No API or stored setting change.

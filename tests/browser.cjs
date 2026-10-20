@@ -10,7 +10,7 @@ const page=await browser.newPage({viewport:{width:1280,height:1000}});const erro
 const url=await ready;const base=url.split('/#')[0],token=url.split('/#')[1];
 assert.equal((await page.request.get(base+'/api')).status(),403);
 assert.equal((await page.request.post(base+'/rule',{data:{workspace:'w1',status:'done',choice:'none'}})).status(),403);
-await page.goto(base+'/#'+token);await page.getByText('Settings ready. Changes save immediately.',{exact:true}).waitFor();
+await page.goto(base+'/#'+token);await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);
 assert.equal(await page.locator('.rule').count(),5);
 await page.evaluate(()=>{model.audio=[{id:'z',name:'zebra.mp3'},{id:'a10',name:'Alpha 10.MP3'},{id:'b',name:'beta.mp3'},{id:'a2',name:'alpha 2.mp3'}];drawRules();});
 assert.deepEqual(await page.locator('#status-done option').allTextContents(),['Default','None · quiet','alpha 2','Alpha 10','beta','zebra']);
@@ -35,7 +35,7 @@ await page.evaluate(()=>{window.originalPlay=HTMLMediaElement.prototype.play;HTM
 await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('The browser could not start the preview. Press Play in the audio controls to try again.',{exact:true}).waitFor();
 assert.equal(await page.locator('#player').isVisible(),true);assert.equal(await page.getByRole('button',{name:'Preview Done sound',exact:true}).isEnabled(),true);
 await page.evaluate(()=>{HTMLMediaElement.prototype.play=window.originalPlay;});
-await page.reload();await page.getByText('Settings ready. Changes save immediately.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),custom);
+await page.reload();await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);assert.equal(await page.locator('#status-done').inputValue(),custom);
 await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
 await page.locator('#upload').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid')});await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
 await page.getByRole('button',{name:'Refresh workspaces',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
