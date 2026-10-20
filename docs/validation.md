@@ -274,3 +274,14 @@ Removed Import audio heading. A native “Import an audio file” button opens t
 hidden native picker; selecting imports immediately. Browser validation opens the
 actual file chooser via this button, selects synthetic audio and verifies import.
 Full Chromium checks passed; captures refreshed. Keyboard semantics retained.
+
+## Older settings server and library button spacing — 2026-10-20
+
+Old settings processes can serve updated static files while retaining their old
+Python request handlers; processes predating Remove were still running locally.
+A 404 now explains how to reopen settings instead of showing “Not found”. Browser
+validation simulates that response, confirms choices remain intact, then retries
+against the current handler and verifies removal/default reset. All 15 Python tests
+and Chromium checks passed. Library actions use a wrapping flex row with 12 px gap;
+refreshed desktop capture visually inspected and mobile overflow check passed.
+No real sound was deleted for verification. Fresh settings server opened afterward.

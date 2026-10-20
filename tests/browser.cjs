@@ -58,6 +58,11 @@ await page.locator('#status-done').selectOption(custom);await page.getByText('So
 await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
 page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Remove done',exact:true}).click();
 assert.equal(await page.locator('#status-done').inputValue(),custom);
+await page.route('**/remove',route=>route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({error:'Not found'})}));
+page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove done',exact:true}).click();
+await page.getByText('This settings tab uses an older Medley server. Reopen Medley with herdr plugin action invoke medley.settings and use the new tab.',{exact:true}).waitFor();
+assert.equal(await page.locator('#status-done').inputValue(),custom);
+await page.unroute('**/remove');
 page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove done',exact:true}).click();
 await page.getByText('Sound removed. Choices using it now use Default.',{exact:true}).waitFor();
 assert.equal(await page.locator('#status-done').inputValue(),'default');
