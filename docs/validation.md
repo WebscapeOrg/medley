@@ -239,3 +239,11 @@ Workspace guidance moved unchanged behind a matching named i button beside its
 heading. Both help popovers share theme styling. Chromium browser checks passed,
 including opening and Escape dismissal of each popup, import, removal, playback,
 uninstall fixture, keyboard and mobile overflow checks. Synthetic captures refreshed.
+
+## Medley info popup — 2026-10-20
+
+First-box Medley heading now has a matching named info button. The requested
+sound-ownership explanation and local-settings line live inside its popover;
+the former footer is removed. Chromium passed opening/Escape dismissal of all
+three help popovers and existing functional, keyboard and mobile checks.
+Synthetic screenshots refreshed. No backend or saved settings changed.
