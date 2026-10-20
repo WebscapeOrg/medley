@@ -247,3 +247,11 @@ sound-ownership explanation and local-settings line live inside its popover;
 the former footer is removed. Chromium passed opening/Escape dismissal of all
 three help popovers and existing functional, keyboard and mobile checks.
 Synthetic screenshots refreshed. No backend or saved settings changed.
+
+## Workspace row alignment — 2026-10-20
+
+Workspace label and dropdown now share the status rows' grid columns on desktop,
+including matching dropdown start/end edges. Native CSS subgrid keeps the action
+columns aligned without placeholder buttons. Mobile retains stacked labels/selects.
+Chromium functional, keyboard and mobile overflow checks passed; desktop synthetic
+capture visually inspected and refreshed with mobile/dark captures.

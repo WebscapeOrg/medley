@@ -6,3 +6,6 @@
 #uninstall{background:#fbe8e6;border-color:#dba9a4;color:#82332d}#uninstall:hover{background:#f7d9d5;border-color:#b9766e}@media(prefers-color-scheme:dark){#uninstall{background:#49302f;border-color:#9e6862;color:#ffd4cf}#uninstall:hover{background:#593735;border-color:#c28a82}}
 
 .library-heading{display:flex;align-items:center;gap:8px;margin-bottom:12px}.library-heading h2{margin:0}.info-button{min-height:32px;width:32px;padding:0;border-radius:50%;font-size:17px;font-weight:600}.help-popover{max-width:min(420px,calc(100vw - 32px));padding:20px;background:var(--panel);color:var(--ink);border:1px solid var(--border);border-radius:12px}.help-popover::backdrop{background:transparent}
+
+.workspace-row{display:grid;grid-template-columns:150px minmax(160px,1fr) auto auto;align-items:center;gap:12px;padding:0 0 20px}.workspace-row label{margin:0}.workspace-row select{min-width:0;width:100%;grid-column:2/-1}@media(max-width:640px){.workspace-row{grid-template-columns:1fr}.workspace-row select{grid-column:1}}
+@media(min-width:641px){section[aria-labelledby=rules-heading]{display:grid;grid-template-columns:150px minmax(160px,1fr) auto auto;column-gap:12px}section[aria-labelledby=rules-heading]>.section-heading{grid-column:1/-1}#rules{display:contents}.rule,.workspace-row{grid-column:1/-1;grid-template-columns:subgrid}.workspace-row select{grid-column:2}}
