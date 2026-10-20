@@ -132,3 +132,13 @@ Aesthetic-and-clear checks:
    screen-reader task completion not independently tested.
 Vendored block contract: not applicable. No vendored layout extended.
 Security: PASS for existing API authentication rejection tests; CSS-only change.
+
+## Alphabetical sound choices — 2026-10-20
+
+Sound labels now sort alphabetically without case sensitivity, using numeric order
+within names (alpha 2 before Alpha 10). Default and None remain first. Browser
+validation checks an intentionally unordered fixture and extension stripping;
+all 11 Python checks also passed. Selection IDs and stored library order unchanged.
+Input-and-interaction: existing native single-select, labels, keyboard operation,
+validation/recovery, safe defaults and reset/undo remain unchanged and browser-tested.
+No password input or new action. No vendored block extended.
