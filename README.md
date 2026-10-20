@@ -37,6 +37,8 @@ A workspace may contain several agents. Medley reads herdr's **combined workspac
 
 Default follows herdr's configured `done_path` / `request_path`, then `path`. If no usable custom file exists, Medley uses herdr's bundled completion or attention clip. Idle and Done use completion; Needs attention uses attention; Working and Unknown are quiet. Explicit selections can add audio to any status.
 
+Use **Manage imported sounds** to view the library and remove a sound. Removal asks for confirmation and resets every workspace/status using that sound to Default. It removes only Medley’s imported copy, not the original file.
+
 ## Where audio plays
 
 Plugin hooks run on the **herdr server machine**, so audio plays there, including for the currently focused workspace. This release does not route sound to remote clients or mirror herdr's focused-tab suppression. It is suitable for a local desktop server; do not enable it on a remote server expecting your laptop to play audio. Playback is bounded to 30 seconds per clip; overlapping notifications are dropped while a clip is playing. Very long MP3s may be interrupted.

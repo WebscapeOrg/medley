@@ -39,6 +39,15 @@ await page.reload();await page.getByText('Settings ready. Changes save immediate
 await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
 await page.locator('#upload').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid')});await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
 await page.getByRole('button',{name:'Refresh workspaces',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
+await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
+await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
+page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Remove done',exact:true}).click();
+assert.equal(await page.locator('#status-done').inputValue(),custom);
+page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove done',exact:true}).click();
+await page.getByText('Sound removed. Choices using it now use Default.',{exact:true}).waitFor();
+assert.equal(await page.locator('#status-done').inputValue(),'default');
+assert.equal(await page.locator('#status-done option').count(),2);
+await page.getByText('No imported sounds.',{exact:true}).waitFor();
 await page.screenshot({path:'docs/desktop.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});await page.screenshot({path:'docs/mobile.png',fullPage:true});
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

@@ -59,7 +59,9 @@ def serve(open_browser=True, port=0):
                 if not 0 < length <= core.MAX_AUDIO * 2:
                     raise ValueError('Request is empty or too large. Maximum audio size is 20 MB.')
                 data = json.loads(self.rfile.read(length))
-                if self.path == '/rule':
+                if self.path == '/remove':
+                    core.remove_audio(data['id'])
+                elif self.path == '/rule':
                     core.set_rule(data['workspace'], data['status'], data['choice'])
                 elif self.path == '/reset':
                     core.update(lambda settings: settings.update(rules={}))

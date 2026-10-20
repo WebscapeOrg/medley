@@ -107,12 +107,33 @@ def import_audio(name, content):
             os.unlink(temporary)
 
 
+def remove_audio(key):
+    if not isinstance(key, str) or len(key) != 64 or any(c not in '0123456789abcdef' for c in key):
+        raise ValueError('Choose an audio file from the library.')
+    with locked(config_dir()):
+        if key not in {audio['id'] for audio in library()}:
+            raise ValueError('This sound is no longer in the library. Refresh and try again.')
+        data = settings()
+        for workspace in list(data['rules']):
+            rules = data['rules'][workspace]
+            for status in list(rules):
+                if rules[status] == key:
+                    del rules[status]
+            if not rules:
+                del data['rules'][workspace]
+        write_json(config_dir() / 'settings.json', data)
+        names = read_json(config_dir() / 'library.json', {})
+        names.pop(key, None)
+        write_json(config_dir() / 'library.json', names)
+        (config_dir() / 'audio' / (key + '.mp3')).unlink()
+
+
 def set_rule(workspace, status, choice):
     if status not in STATUSES or not isinstance(workspace, str) or len(workspace) > 200:
         raise ValueError('Choose a valid workspace and status.')
-    if choice not in ('default', 'none') and choice not in {a['id'] for a in library()}:
-        raise ValueError('Choose an audio file from the library.')
     def change(data):
+        if choice not in ('default', 'none') and choice not in {a['id'] for a in library()}:
+            raise ValueError('Choose an audio file from the library.')
         rules = data['rules'].setdefault(workspace, {})
         if choice == 'default':
             rules.pop(status, None)
