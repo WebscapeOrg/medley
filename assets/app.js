@@ -48,6 +48,31 @@ function drawRules() {
     row.append(label,select,preview,reset); $('rules').append(row);
   }
 }
+function drawLibrary() {
+  $('library-files').replaceChildren();
+  for (const audio of model.audio.slice().sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}))) {
+    const row = document.createElement('div'); row.className = 'library-file';
+    const name = document.createElement('span'); name.textContent = audio.name.replace(/\.mp3$/i,'');
+    const remove = document.createElement('button'); remove.textContent = 'Remove';
+    remove.setAttribute('aria-label','Remove ' + name.textContent);
+    remove.onclick = () => {
+      if (!confirm('Remove “' + name.textContent + '” from the library? Every workspace/status using it will return to Default. You can import the file again later.')) return;
+      return run('Sound removed. Choices using it now use Default.',async () => {
+        await request('/remove',{id:audio.id});
+        $('player').pause(); $('player').hidden=true;
+        savedRules=undefined; $('undo').hidden=true;
+        await load(); $('manage-library').focus();
+      });
+    };
+    row.append(name,remove); $('library-files').append(row);
+  }
+  if (!model.audio.length) $('library-files').textContent='No imported sounds.';
+}
+$('manage-library').onclick = () => {
+  const expanded = $('manage-library').getAttribute('aria-expanded') !== 'true';
+  $('manage-library').setAttribute('aria-expanded',String(expanded));
+  $('library-files').hidden = !expanded;
+};
 async function load() {
   const selected = $('workspace').value;
   model = await request('/api');
@@ -56,6 +81,7 @@ async function load() {
   $('workspace').replaceChildren(...model.workspaces.map(w => option(w.workspace_id,w.label || w.workspace_id)));
   if (model.workspaces.some(w => w.workspace_id === selected)) $('workspace').value = selected;
   drawRules();
+  drawLibrary();
 }
 $('workspace').onchange = drawRules;
 $('refresh').onclick = () => run('Workspaces refreshed.',load);

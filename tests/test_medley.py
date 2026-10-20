@@ -49,6 +49,21 @@ class MedleyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 core.set_rule('w1', status, choice)
 
+    def test_remove_resets_all_uses_and_preserves_other_rules(self):
+        key = core.import_audio('remove.mp3', (core.ROOT / 'assets/done.mp3').read_bytes())
+        core.set_rule('w1', 'done', key)
+        core.set_rule('w2', 'idle', key)
+        core.set_rule('w2', 'working', 'none')
+        core.remove_audio(key)
+        self.assertEqual(core.settings()['rules'], {'w2': {'working': 'none'}})
+        self.assertEqual(core.library(), [])
+        self.assertEqual(core.resolve(core.settings(), 'w1', 'done'), core.ROOT / 'assets/done.mp3')
+        with self.assertRaises(ValueError):
+            core.set_rule('w1', 'done', key)
+        for invalid in ['../../file', key]:
+            with self.assertRaises(ValueError):
+                core.remove_audio(invalid)
+
     def test_invalid_import(self):
         for name, content in [('file.wav', b'x'), ('file.mp3', b''), ('file.mp3', b'invalid audio')]:
             with self.assertRaises(ValueError):

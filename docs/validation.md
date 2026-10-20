@@ -142,3 +142,35 @@ all 11 Python checks also passed. Selection IDs and stored library order unchang
 Input-and-interaction: existing native single-select, labels, keyboard operation,
 validation/recovery, safe defaults and reset/undo remain unchanged and browser-tested.
 No password input or new action. No vendored block extended.
+
+## Manage imported sounds — 2026-10-20
+
+Expandable native button reveals imported sounds with named Remove buttons.
+Confirmation explains all affected choices return to Default. Backend removal
+uses the configuration lock, validates a SHA-256 ID and membership, resets every
+reference before deleting the imported copy, and preserves unrelated rules.
+Rule validation now occurs under the same lock, preventing new references racing
+removal. Removal also invalidates the page's reset undo snapshot.
+
+12 Python tests passed, including multi-workspace reset, unrelated-rule preservation,
+missing/traversal rejection and default resolution. Chromium tests passed for
+viewing the list, cancelling confirmation, successful removal, and dropdown reset.
+Security: PASS for authenticated endpoint routing and strict path validation;
+original source files are never removal targets. Existing auth tests passed.
+
+Control-and-feedback checks: (1) existing busy status followed by explicit removal
+confirmation; (2) disclosure closes freely and native confirmation cancels removal;
+(3) confirmation names default reset and busy state prevents repeat actions;
+(4) missing sound errors advise refresh, controls recover through existing handler;
+(5) only imported copy and referencing choices affected, unrelated rules tested;
+(6) busy feedback immediate; (7) local bounded operation uses existing busy state;
+(8) no new routes, selected workspace retained after load.
+Input-and-interaction checks: (1) IDs validated server-side; (2) recoverable error;
+(3) native named buttons and aria-expanded/controls; (4) explicit Remove action with
+confirmation; (5) existing library names reused; (6) no new reset/clear button;
+(7) no passwords; (8) native sound selectors unchanged.
+Aesthetic-and-clear checks: (1) list initially collapsed; (2) visible named actions;
+(3) no motion; (4) sorted list and per-file rows; (5) shared theme/font tokens and
+wrapping long names, mobile overflow test passes; (6) native keyboard controls and
+existing keyboard test pass, screen-reader/manual zoom not independently tested.
+No vendored layout extended. Synthetic captures refreshed by browser tests.
