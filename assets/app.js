@@ -13,6 +13,7 @@ async function request(path, data) {
 async function run(message, operation) {
   const focusedId = document.activeElement.id;
   $('error').hidden = true;
+  $('feedback').hidden = false;
   $('feedback').textContent = 'Saving…';
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
   try {const result = await operation(); $('feedback').textContent = result || message;}
@@ -98,7 +99,7 @@ $('upload').onchange = () => {
   await request('/upload',{name:file.name,content});$('upload').value = '';await load();
   });
 };
-run('Settings ready. Changes save immediately.',load);
+load().catch(error => { $('error').textContent=error.message; $('error').hidden=false; });
 
 $('uninstall').onclick = () => {
   if (!confirm('Uninstall Medley? Herdr’s previous sound setting will be restored first. Your imported sounds and saved choices will be kept.')) return;
