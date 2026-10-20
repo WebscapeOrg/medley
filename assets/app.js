@@ -15,7 +15,7 @@ async function run(message, operation) {
   $('error').hidden = true;
   $('feedback').textContent = 'Saving…';
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
-  try {await operation(); $('feedback').textContent = message;}
+  try {const result = await operation(); $('feedback').textContent = result || message;}
   catch (error) {try {await load();} catch (_) {} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
   finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = false); if(focusedId && $(focusedId)) $(focusedId).focus();}
 }
@@ -33,12 +33,15 @@ function drawRules() {
     select.value = model.settings.rules[workspace]?.[status] || 'default';
     select.onchange = () => run('Sound saved.', async () => {await request('/rule',{workspace,status,choice:select.value}); await load();});
     const preview = document.createElement('button'); preview.textContent = 'Preview'; preview.setAttribute('aria-label','Preview ' + label.textContent + ' sound');
-    preview.onclick = () => run('Preview ready. Use the audio controls to play or stop.', async () => {
+    preview.onclick = () => run('Playing preview. Use the audio controls to stop.', async () => {
       const response = await fetch('/preview', {method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify({workspace,status})});
       if (!response.ok) throw new Error((await response.json()).error);
-      if (response.headers.get('Content-Type').includes('application/json')) {$('player').pause();$('player').hidden=true;return;}
+      if (response.headers.get('Content-Type').includes('application/json')) {$('player').pause();$('player').hidden=true;return 'This sound is set to quiet.';}
       if ($('player').src) URL.revokeObjectURL($('player').src);
+      $('player').pause();
       $('player').src=URL.createObjectURL(await response.blob());$('player').hidden=false;
+      try {await $('player').play();}
+      catch (_) {throw new Error('The browser could not start the preview. Press Play in the audio controls to try again.');}
     });
     const reset = document.createElement('button'); reset.textContent = 'Reset'; reset.setAttribute('aria-label','Reset ' + label.textContent + ' to default');
     reset.onclick = () => run('Sound reset to default.',async () => {await request('/rule',{workspace,status,choice:'default'});await load();});

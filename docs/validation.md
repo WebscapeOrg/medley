@@ -62,3 +62,23 @@ The interface is bespoke HTML/CSS, not a vendored UI block. Desktop status rows 
 ## Known limits
 
 Server-host playback only; no client-specific routing or focus suppression. Rapid intermediate transitions coalesce; overlapping clips are dropped. Independent sessions need separate config/state directories. A new/deleted-and-recreated workspace does not inherit old mappings. Screen-reader operation, macOS and real audio-device listening remain unverified. These limits are disclosed in README and the interface where relevant.
+
+## Preview playback follow-up — 2026-10-20
+
+Preview now awaits browser playback rather than only loading the audio controls.
+Chromium browser validation confirmed playback time advances after clicking Preview,
+quiet selections stop and hide the player, and a simulated browser rejection shows
+recovery guidance while leaving controls available. All 11 Python tests also passed.
+Security: PASS for existing browser API authentication rejection tests; loopback/token
+boundaries unchanged. Audible speaker output was not independently verified.
+
+Control-and-feedback checks:
+1. Status: playback confirmation follows successful play; quiet has its own message.
+2. Control: native audio controls remain available to stop or replay.
+3. Prevention: existing busy controls prevent duplicate preview requests.
+4. Recovery: rejected playback shows a plain-language instruction to press Play.
+5. Error impact: preview does not alter saved rules; error recovery preserves choices.
+6. Response timing: existing immediate busy feedback remains during fetch/play.
+7. Longer operations: preview uses the existing busy state; no new long operation.
+8. Navigation: no navigation changes; reload persistence passed browser validation.
+Vendored-block contract: not applicable; no vendored layout block was extended.
