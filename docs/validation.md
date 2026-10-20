@@ -255,3 +255,9 @@ including matching dropdown start/end edges. Native CSS subgrid keeps the action
 columns aligned without placeholder buttons. Mobile retains stacked labels/selects.
 Chromium functional, keyboard and mobile overflow checks passed; desktop synthetic
 capture visually inspected and refreshed with mobile/dark captures.
+
+## Workspace heading clearance — 2026-10-20
+
+Added 20 px top padding to the Workspace row so the heading/toolbar no longer
+crowds the dropdown. Shared column alignment retained. Chromium checks passed;
+refreshed desktop capture visually inspected, mobile overflow check passed.
