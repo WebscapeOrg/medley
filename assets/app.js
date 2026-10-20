@@ -29,7 +29,7 @@ function drawRules() {
     const label = document.createElement('label'); label.htmlFor = 'status-' + status;
     label.textContent = ({idle:'Idle',working:'Working',blocked:'Needs attention',done:'Done',unknown:'Unknown'})[status];
     const select = document.createElement('select'); select.id = label.htmlFor;
-    select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.map(audio => option(audio.id,audio.name.replace(/\.mp3$/i,''))));
+    select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.slice().sort((a,b) => a.name.replace(/\.mp3$/i,'').localeCompare(b.name.replace(/\.mp3$/i,''),undefined,{sensitivity:'base',numeric:true})).map(audio => option(audio.id,audio.name.replace(/\.mp3$/i,''))));
     select.value = model.settings.rules[workspace]?.[status] || 'default';
     select.onchange = () => run('Sound saved.', async () => {await request('/rule',{workspace,status,choice:select.value}); await load();});
     const preview = document.createElement('button'); preview.textContent = 'Preview'; preview.setAttribute('aria-label','Preview ' + label.textContent + ' sound');
