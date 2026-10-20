@@ -66,9 +66,41 @@ function drawLibrary() {
         await load(); $('manage-library').focus();
       });
     };
-    row.append(name,remove); $('library-files').append(row);
+    const rename = document.createElement('button'); rename.textContent = 'Rename';
+    rename.id = 'rename-' + audio.id;
+    rename.setAttribute('aria-label','Rename ' + name.textContent);
+    rename.onclick = () => editSoundName(audio, row, rename.id);
+    const actions = document.createElement('div'); actions.className = 'sound-actions';
+    actions.append(rename,remove);
+    row.append(name,actions); $('library-files').append(row);
   }
   if (!model.audio.length) $('library-files').textContent='No imported sounds.';
+}
+function editSoundName(audio, row, returnFocus) {
+  const form = document.createElement('form'); form.className = 'rename-form';
+  const label = document.createElement('label'); label.textContent = 'Sound name';
+  const input = document.createElement('input'); input.type = 'text'; input.required = true; input.maxLength = 160;
+  input.id = 'sound-name-' + audio.id; label.htmlFor = input.id;
+  input.value = audio.name.replace(/\.mp3$/i,'');
+  const error = document.createElement('p'); error.role = 'alert'; error.className = 'rename-error'; error.hidden = true;
+  error.id = input.id + '-error'; input.setAttribute('aria-describedby',error.id);
+  const save = document.createElement('button'); save.type = 'submit'; save.textContent = 'Save';
+  const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Cancel';
+  const actions = document.createElement('div'); actions.className = 'sound-actions'; actions.append(save,cancel);
+  const close = () => {drawLibrary(); $(returnFocus)?.focus();};
+  cancel.onclick = close;
+  form.onkeydown = event => {if (event.key === 'Escape' && !save.disabled) {event.preventDefault();close();}};
+  form.onsubmit = async event => {
+    event.preventDefault(); error.hidden = true;
+    save.disabled = true; input.disabled = true; cancel.disabled = true; save.textContent = 'Saving…';
+    try {
+      await request('/rename',{id:audio.id,name:input.value});
+      await load(); $('feedback').hidden = false; $('feedback').textContent = 'Sound renamed.';
+      $(returnFocus)?.focus();
+    } catch (failure) {error.textContent = failure.message; error.hidden = false;}
+    finally {save.disabled = false; input.disabled = false; cancel.disabled = false; save.textContent = 'Save'; if (form.isConnected) input.focus();}
+  };
+  form.append(label,input,actions,error); row.replaceChildren(form); input.focus(); input.select();
 }
 $('manage-library').onclick = () => {
   const expanded = $('manage-library').getAttribute('aria-expanded') !== 'true';
@@ -90,10 +122,9 @@ $('refresh').onclick = () => run('Workspaces refreshed.',load);
 $('enabled').onchange = () => run('Playback setting saved.',async () => {await request('/enabled',{enabled:$('enabled').checked});await load();});
 $('reset').onclick = () => run('All sounds reset to default. You can undo this reset.',async () => {savedRules = structuredClone(model.settings.rules);await request('/reset',{});await load();$('undo').hidden = false;});
 $('undo').onclick = () => run('Previous sound choices restored.',async () => {await request('/restore',{rules:savedRules});await load();$('undo').hidden = true;});
-$('upload').onchange = () => {
-  if (!$('upload').files.length) return;
+function importAudio(file) {
+  if (!file) return;
   return run('Audio imported. Select it for any status below.',async () => {
-  const file = $('upload').files[0];
   if (!file || !(/\.(mp3|wav)$/i).test(file.name) || file.size > 20*1024*1024) throw new Error('Choose an MP3 or WAV file up to 20 MB.');
   const content = await new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result.split(',')[1]);reader.onerror = () => reject(new Error('The file could not be read.'));reader.readAsDataURL(file);});
   await request('/upload',{name:file.name,content});$('upload').value = '';await load();
@@ -111,4 +142,14 @@ $('uninstall').onclick = () => {
   });
 };
 
-$('choose-audio').onclick = () => $('upload').click();
+$('upload').onchange = () => importAudio($('upload').files[0]);
+$('choose-audio').onclick = async () => {
+  if (!window.showOpenFilePicker) {$('upload').click();return;}
+  try {
+    const [handle] = await window.showOpenFilePicker({startIn:'downloads',types:[{description:'Audio files',accept:{'audio/mpeg':['.mp3'],'audio/wav':['.wav']}}],excludeAcceptAllOption:true,multiple:false});
+    await importAudio(await handle.getFile());
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    $('error').textContent = 'The file picker could not open. Try again. ' + error.message; $('error').hidden = false;
+  }
+};

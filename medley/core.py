@@ -124,6 +124,22 @@ def import_audio(name, content):
             os.unlink(temporary)
 
 
+def rename_audio(key, name):
+    if not isinstance(name, str):
+        raise ValueError('Enter a sound name between 1 and 160 characters.')
+    name = name.strip()
+    if name.lower().endswith('.mp3'):
+        name = name[:-4].rstrip()
+    if not name or len(name) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in name):
+        raise ValueError('Enter a sound name between 1 and 160 characters, without line breaks.')
+    with locked(config_dir()):
+        if not isinstance(key, str) or key not in {audio['id'] for audio in library()}:
+            raise ValueError('This sound is no longer in the library. Refresh and try again.')
+        names = read_json(config_dir() / 'library.json', {})
+        names[key] = name
+        write_json(config_dir() / 'library.json', names)
+
+
 def remove_audio(key):
     if not isinstance(key, str) or len(key) != 64 or any(c not in '0123456789abcdef' for c in key):
         raise ValueError('Choose an audio file from the library.')

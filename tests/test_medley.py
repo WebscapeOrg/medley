@@ -49,6 +49,24 @@ class MedleyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 core.set_rule('w1', status, choice)
 
+    def test_rename_preserves_audio_and_all_assignments(self):
+        content = (core.ROOT / 'assets/done.mp3').read_bytes()
+        key = core.import_audio('old.mp3', content)
+        core.set_rule('w1', 'done', key)
+        core.set_rule('w2', 'idle', key)
+        before = core.settings()
+        core.rename_audio(key, '  Bell & <chime>.MP3  ')
+        self.assertEqual(core.library(), [{'id': key, 'name': 'Bell & <chime>'}])
+        self.assertEqual(core.settings(), before)
+        self.assertEqual(core.resolve(before, 'w2', 'idle').read_bytes(), content)
+        for invalid in ['', '  ', '.mp3', 'x' * 161, 'a\nb', None]:
+            with self.assertRaises(ValueError):
+                core.rename_audio(key, invalid)
+        for invalid in ['../escape', '0' * 64, None]:
+            with self.assertRaises(ValueError):
+                core.rename_audio(invalid, 'New name')
+        self.assertEqual(core.library()[0]['name'], 'Bell & <chime>')
+
     def test_remove_resets_all_uses_and_preserves_other_rules(self):
         key = core.import_audio('remove.mp3', (core.ROOT / 'assets/done.mp3').read_bytes())
         core.set_rule('w1', 'done', key)

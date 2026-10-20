@@ -61,6 +61,8 @@ def serve(open_browser=True, port=0):
                 data = json.loads(self.rfile.read(length))
                 if self.path == '/uninstall':
                     core.uninstall()
+                elif self.path == '/rename':
+                    core.rename_audio(data['id'], data['name'])
                 elif self.path == '/remove':
                     core.remove_audio(data['id'])
                 elif self.path == '/rule':

@@ -293,3 +293,76 @@ buttons now use the same 12 px gap as Preview/Reset. Info buttons and glyphs
 reduced 25%: 32 to 24 px diameter, 17 to 12.75 px type. Native button semantics
 and focus ring retained. Chromium checks passed, synthetic captures refreshed,
 and desktop visually inspected. Mobile overflow and popup keyboard tests passed.
+
+
+## Imported sound renaming and Downloads picker — 2026-10-20
+
+Scope: My Sounds → Manage imported sounds → Rename; browser import picker.
+Synthetic evidence (scratch, outside source): `/tmp/medley-rename-evidence/`.
+Matching before/after desktop captures use 1280×1000, light theme, normal scale;
+additional edit-state captures cover 390px mobile, light/dark and reduced motion.
+
+Security: PASS for the changed API/data boundaries. Browser checks reject an
+unauthenticated rename with 403. Authenticated labels render as text (including
+`<chime>`), never HTML; core tests reject missing IDs and invalid labels and verify
+unchanged audio bytes and assignments in two workspaces. Renaming uses the existing
+library lock and atomic metadata writer, with no new filesystem path or subprocess.
+The picker receives `startIn: 'downloads'`, restricts selection to one MP3/WAV, and
+imports immediately; browser tests cover cancellation and an accepted file through
+that API. Browsers lacking it retain the native input fallback. The automated
+picker check uses browser API doubles, not a visual inspection of the OS dialog.
+No credentials, private audio or real workspace names enter evidence.
+
+Validation: 16 Python tests plus Chromium browser suite. Tests cover Save by
+Enter/button, Escape and Cancel, blank-name rejection, retry after server failure
+without losing typed text, returning focus, preserving selected rules and updating
+labels. Existing import/playback/remove/uninstall regression checks remain in place.
+
+Interaction review (input-and-interaction):
+
+1. Error prevention: prefilled required text field, 160-character cap; server rejects
+   empty/whitespace/control characters; invalid saves preserve the form.
+2. Error recovery: inline alert explains the name limit or server failure; retry
+   succeeds with the entered value retained.
+3. Standard controls: native labeled input, form and buttons; keyboard Enter saves,
+   Escape cancels, focus returns to the renamed sound’s button.
+4. Platform actions: explicit Save/Cancel; Rename is distinct from Remove, grouped
+   with 12px spacing; renaming has no destructive side effects.
+5. Reuse known data: field prefilled with the existing visible name and selected.
+6. Reset/Clear: none added to the editor; Cancel leaves the saved name untouched.
+7. Password visibility: no password input in the affected flow; not applicable.
+8. Selection controls: text naming requires free text; existing sound selects kept.
+
+Feedback review (control-and-feedback):
+
+1. Status: Save becomes Saving… while pending; success announces Sound renamed.
+2. Freedom: Cancel/Escape leave editing; changing a name again reverses a rename.
+3. Prevention: pending controls disabled to prevent duplicate submissions; server
+   validates IDs against the library inside its mutation lock.
+4. Recovery: failure alert appears inside editor, preserving entered name and focus.
+5. Severity: renaming changes only metadata; existing rules and playback bytes stay
+   intact, verified across two assigned workspaces.
+6. Response thresholds: immediate pending label; small local metadata request, no
+   fabricated progress percentage.
+7. Longer operations: no long processing added; network failures re-enable controls
+   for retry/cancel. File import keeps the existing save-feedback flow.
+8. Navigation: no route or history changes introduced; inline editor has explicit
+   Cancel and Escape. Browser Back retains its existing page-navigation behavior.
+
+Visual/accessibility review (aesthetic-and-clear):
+
+1. Minimalism: editor appears only after Rename; no additional explanatory chrome.
+2. Affordances: visible Rename/Save/Cancel labels and native controls.
+3. Motion: no animation added; dark mobile captured with reduced motion.
+4. Scannability: sound name stays left, grouped actions right; mobile wraps without
+   horizontal overflow; heading spacing retained.
+5. Legibility: input inherits scalable body type and theme colors; light/dark editor
+   captures inspected, visible focus outline retained. Browser zoom remains enabled.
+6. Task completion: keyboard-only entry/save/cancel exercised; native label and
+   described inline alert expose field/error relationships. Screen-reader speech
+   was not independently tested; no claim of full assistive-technology certification.
+
+Block contract: no vendored block. Existing library row relies on two flex children
+(name and actions). Rename/Remove stay inside a single action group; editor replaces
+row contents with one full-width form. Rendered desktop/mobile checks confirm the
+12px action gap and wrapping, rather than adding a third distributed flex child.
