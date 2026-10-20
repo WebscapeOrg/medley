@@ -10,7 +10,7 @@ This approach deliberately coalesces rapid intermediate states. It does not clai
 
 ## Configuration
 
-`HERDR_PLUGIN_CONFIG_DIR` contains `settings.json`, `library.json`, imported audio and the first pre-activation herdr config backup. `HERDR_PLUGIN_STATE_DIR` contains the aggregate-status cache and locks. Standalone commands default to herdr's XDG paths. State writes use a private temporary file, fsync and atomic replacement. Audio identities are SHA-256 hashes; imports are deduplicated. The original file name is display text, never a filesystem path or shell command.
+`HERDR_PLUGIN_CONFIG_DIR` contains `settings.json`, `library.json`, imported audio and the first pre-activation herdr config backup. `HERDR_PLUGIN_STATE_DIR` contains the aggregate-status cache and locks. Standalone commands default to herdr's XDG paths. State writes use a private temporary file, fsync and atomic replacement. Audio identities are SHA-256 hashes; imports are deduplicated. Sound names are display text, never filesystem paths or shell commands. Renaming validates a 1–160 character label and atomically updates only library.json under the existing library lock; audio hashes, files and workspace rules remain unchanged.
 
 Rules are keyed by workspace ID and status. A missing cell means default, `none` means quiet, and a hash selects a library file. Defaults use herdr's current custom sound paths or the Apache-licensed bundled clips. No private user sounds ship in the public repo.
 
