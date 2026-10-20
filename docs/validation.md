@@ -112,3 +112,23 @@ Control-and-feedback checks for immediate import:
 6. Timing: immediate existing busy feedback during file read/upload.
 7. Progress: bounded 20 MB upload uses existing busy state; no new long-running action.
 8. Navigation: reload persistence and normal keyboard navigation passed.
+
+## Native file button appearance — 2026-10-20
+
+Choose File now shares Preview/Reset background, text, border, radius, minimum
+height, padding, hover and disabled styling through ::file-selector-button.
+It retains native file-picker behavior and inherited typography, with a 12 px
+margin before the selected filename. Browser and 11 Python checks passed.
+Synthetic desktop/mobile/dark captures refreshed; desktop and dark mobile inspected.
+
+Aesthetic-and-clear checks:
+1. Minimalism: no new controls or content; changed only the mismatched native button.
+2. Affordance: native labelled file input retained; button now matches adjacent actions.
+3. Motion: none added; reduced-motion browser capture passed.
+4. Scanning: existing headings/grouping preserved; captures show no displacement.
+5. Legibility: existing theme text/background tokens reused, inherited scalable font;
+   mobile capture fits without horizontal overflow. Browser zoom not separately tested.
+6. Accessibility: native semantics/focus retained and keyboard browser check passed;
+   screen-reader task completion not independently tested.
+Vendored block contract: not applicable. No vendored layout extended.
+Security: PASS for existing API authentication rejection tests; CSS-only change.
