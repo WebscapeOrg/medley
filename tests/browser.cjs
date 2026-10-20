@@ -20,7 +20,16 @@ await page.getByRole('button',{name:'Undo reset',exact:true}).click();await page
 await page.locator('#upload').setInputFiles('assets/done.mp3');await page.getByRole('button',{name:'Import MP3',exact:true}).click();await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
 assert.equal(await page.locator('#status-done option').count(),3);
 const custom=await page.locator('#status-done option').last().getAttribute('value');await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
-await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('Preview ready. Use the audio controls to play or stop.',{exact:true}).waitFor();assert.equal(await page.locator('#player').isVisible(),true);
+await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('Playing preview. Use the audio controls to stop.',{exact:true}).waitFor();assert.equal(await page.locator('#player').isVisible(),true);
+await page.waitForFunction(()=>document.getElementById('player').currentTime>0);
+await page.locator('#status-done').selectOption('none');await page.getByText('Sound saved.',{exact:true}).waitFor();
+await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('This sound is set to quiet.',{exact:true}).waitFor();
+assert.equal(await page.locator('#player').evaluate(p=>p.paused),true);assert.equal(await page.locator('#player').isVisible(),false);
+await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
+await page.evaluate(()=>{window.originalPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=()=>Promise.reject(new DOMException('Blocked','NotAllowedError'));});
+await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('The browser could not start the preview. Press Play in the audio controls to try again.',{exact:true}).waitFor();
+assert.equal(await page.locator('#player').isVisible(),true);assert.equal(await page.getByRole('button',{name:'Preview Done sound',exact:true}).isEnabled(),true);
+await page.evaluate(()=>{HTMLMediaElement.prototype.play=window.originalPlay;});
 await page.reload();await page.getByText('Settings ready. Changes save immediately.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),custom);
 await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
 await page.getByRole('button',{name:'Import MP3',exact:true}).click();await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
