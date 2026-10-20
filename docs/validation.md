@@ -223,3 +223,12 @@ Uninstall uses a soft red fill, border and text with matching hover colors in
 light and dark themes. Existing focus ring and native button behavior retained.
 15 Python tests and Chromium browser checks passed; synthetic captures refreshed.
 Only destructive-action color styling changed; no API, layout or state change.
+
+## Audio library info popup — 2026-10-20
+
+Import guidance moved unchanged into a native popover, opened by a circular i
+button beside Audio library with accessible name “About audio imports”. Native
+popover supplies Escape and light-dismiss behavior. Chromium explicitly checks
+initially hidden, click-to-open and Escape dismissal; 15 Python tests also pass.
+Existing keyboard checks and mobile overflow checks pass. Synthetic captures updated.
+No extra always-visible prose, modal trap, custom keyboard handler or new endpoint.

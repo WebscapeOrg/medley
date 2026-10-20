@@ -12,6 +12,11 @@ assert.equal((await page.request.get(base+'/api')).status(),403);
 assert.equal((await page.request.post(base+'/rule',{data:{workspace:'w1',status:'done',choice:'none'}})).status(),403);
 await page.goto(base+'/#'+token);await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);
 assert.equal(await page.locator('.rule').count(),5);
+assert.equal(await page.locator('#library-help').isVisible(),false);
+await page.getByRole('button',{name:'About audio imports',exact:true}).click();
+assert.equal(await page.locator('#library-help').isVisible(),true);
+await page.keyboard.press('Escape');assert.equal(await page.locator('#library-help').isVisible(),false);
+
 await page.evaluate(()=>{model.audio=[{id:'z',name:'zebra.mp3'},{id:'a10',name:'Alpha 10.MP3'},{id:'b',name:'beta.mp3'},{id:'a2',name:'alpha 2.mp3'}];drawRules();});
 assert.deepEqual(await page.locator('#status-done option').allTextContents(),['Default','None · quiet','alpha 2','Alpha 10','beta','zebra']);
 await page.evaluate(()=>load());
