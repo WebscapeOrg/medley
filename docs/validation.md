@@ -261,3 +261,9 @@ capture visually inspected and refreshed with mobile/dark captures.
 Added 20 px top padding to the Workspace row so the heading/toolbar no longer
 crowds the dropdown. Shared column alignment retained. Chromium checks passed;
 refreshed desktop capture visually inspected, mobile overflow check passed.
+
+## File-picker status text — 2026-10-20
+
+Native file-input filename text is visually hidden, leaving the styled Choose File
+button. Its label, picker and immediate import behavior remain. Chromium suite
+passed with updated synthetic captures, including import/error and keyboard checks.
