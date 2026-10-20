@@ -526,3 +526,31 @@ Block contract: no vendored block. Header has title and Settings as its two chil
 each panel heading still groups title/info separately from its actions. Removing the
 management toggle leaves no stale handlers or focus references. Shared content-row
 subgrids retain corresponding row tops and heights.
+
+
+## Header controls and whitespace — 2026-10-20
+
+Removed the Settings heading, card and its info popup as requested. The existing
+switch and Uninstall button sit directly in the header, with a 24px gap. Header
+clearance is 48px; panel headings have 24px clearance below and 20px between
+wrapped lines. Shared content tracks still align both panels' rows.
+
+Validation: 16 Python tests and Chromium interaction suite pass. Browser checks
+cover absence of Settings heading, single header button, heading clearance,
+shared row alignment at 1200/1280/1600px, long names, rename forms and 125% text.
+Desktop light and mobile dark synthetic captures inspected; populated desktop
+capture is at `/tmp/medley-spacing-evidence/populated-desktop.png`.
+
+Aesthetic-and-clear checks (scope: requested header and spacing):
+1. Minimalism: removed card, heading and help control; only two requested controls remain.
+2. Affordances: native labeled switch and soft-red text button retained; focus styles retained.
+3. Motion: no animation introduced; reduced-motion browser case passes.
+4. Scanning: larger heading clearance separates actions from rows; aligned dividers retained.
+5. Legibility: existing theme colors and relative body/control sizes retained; enlarged-text
+   alignment and 320px no-overflow checks pass. No new contrast pair introduced.
+6. Accessibility: switch retains accessible name; keyboard preview/rename and popup Escape
+   checks pass. Controls wrap on narrow screens. Screen-reader operation not manually verified.
+Block contract: no vendored block. Header remains two children (title, controls),
+and desktop panels retain shared subgrid tracks; rendered row checks pass.
+Security: PASS for existing token rejection checks on API, preview, rename and rule;
+no networking, credential, storage or backend behavior changed.

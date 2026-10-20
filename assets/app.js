@@ -140,7 +140,7 @@ $('uninstall').onclick = () => {
     await request('/uninstall',{});
     $('player').pause();
     $('enabled').checked=false; $('enabled-label').textContent='Disabled';
-    document.querySelectorAll('section').forEach(section=>section.hidden=true);
+    document.querySelectorAll('section,.settings-controls').forEach(section=>section.hidden=true);
   });
 };
 
