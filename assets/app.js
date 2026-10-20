@@ -79,7 +79,6 @@ async function load() {
   model = await request('/api');
   $('enabled').checked = model.settings.enabled;
   $('enabled-label').textContent = model.settings.enabled ? 'Enabled' : 'Disabled';
-  $('library').textContent = model.audio.length ? model.audio.length + ' audio files available.' : 'Your library is empty. Import an MP3 or WAV to get started.';
   $('workspace').replaceChildren(...model.workspaces.map(w => option(w.workspace_id,w.label || w.workspace_id)));
   if (model.workspaces.some(w => w.workspace_id === selected)) $('workspace').value = selected;
   drawRules();
