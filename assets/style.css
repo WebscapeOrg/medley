@@ -3,3 +3,4 @@
 .library-file{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}.library-file span{overflow-wrap:anywhere;min-width:0}
 
 .toggle input[role=switch]{appearance:none;width:44px;height:26px;border-radius:16px;background:var(--border);position:relative;flex-shrink:0;cursor:pointer}.toggle input[role=switch]::before{content:'';position:absolute;width:18px;height:18px;border-radius:50%;left:4px;top:4px;background:var(--panel)}.toggle input[role=switch]:checked{background:var(--accent)}.toggle input[role=switch]:checked::before{left:22px}
+#uninstall{background:#fbe8e6;border-color:#dba9a4;color:#82332d}#uninstall:hover{background:#f7d9d5;border-color:#b9766e}@media(prefers-color-scheme:dark){#uninstall{background:#49302f;border-color:#9e6862;color:#ffd4cf}#uninstall:hover{background:#593735;border-color:#c28a82}}

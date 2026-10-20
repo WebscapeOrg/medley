@@ -216,3 +216,10 @@ Removed the eyebrow and initial ready message. Feedback stays hidden on initial
 load and reload, then appears for user actions; initial load errors still surface.
 15 Python checks and Chromium browser checks passed, including hidden initial
 feedback assertions. No API or stored setting change.
+
+## Soft red uninstall button — 2026-10-20
+
+Uninstall uses a soft red fill, border and text with matching hover colors in
+light and dark themes. Existing focus ring and native button behavior retained.
+15 Python tests and Chromium browser checks passed; synthetic captures refreshed.
+Only destructive-action color styling changed; no API, layout or state change.
