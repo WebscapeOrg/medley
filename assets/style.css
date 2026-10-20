@@ -11,3 +11,5 @@
 @media(min-width:641px){section[aria-labelledby=rules-heading]{display:grid;grid-template-columns:150px minmax(160px,1fr) auto auto;column-gap:12px}section[aria-labelledby=rules-heading]>.section-heading{grid-column:1/-1}#rules{display:contents}.rule,.workspace-row{grid-column:1/-1;grid-template-columns:subgrid}.workspace-row select{grid-column:2}}
 .workspace-row{padding-top:20px}
 input[type=file]{font-size:0;width:132px}input::file-selector-button{font:1.0625rem/1.6 system-ui,sans-serif;margin-right:0}
+
+.library-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:12px 0}
