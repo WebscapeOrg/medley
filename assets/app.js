@@ -54,6 +54,7 @@ function drawRules() {
   }
 }
 function drawLibrary() {
+  document.querySelector('.workspace-sounds-layout').style.setProperty('--panel-rows',Math.max(6,model.audio.length) + 1);
   $('library-files').replaceChildren();
   for (const audio of model.audio.slice().sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}))) {
     const row = document.createElement('div'); row.className = 'library-file';

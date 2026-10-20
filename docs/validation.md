@@ -456,3 +456,37 @@ Aesthetic-and-clear check-by-check review:
 Block contract: no vendored block. New grid contains exactly the two existing
 sections; heading/action and library-row child grouping remain unchanged. Rendered
 position assertions confirm desktop columns; mobile capture confirms stacking.
+
+## Shared row heights and divider alignment — 2026-10-20
+
+Desktop panels share grid rows through CSS subgrid: the heading track absorbs
+header wrapping, followed by Workspace/the first sound and the five status/sound
+rows. Additional sounds extend the grid. Both panels use the same vertical row
+padding and top-divider convention. Row count is derived from the current library
+length during drawing; no data is changed. Stacked/mobile styling is unchanged.
+
+16 Python tests and the Chromium browser suite passed. New rendered-coordinate
+checks compare corresponding row tops/heights within 1px at 1200, 1280 and 1600px,
+with seven synthetic sounds, a wrapping name, an open rename form and 125% text.
+Existing narrow overflow, collapse/reopen, preview, rename, remove and empty-library
+checks pass. Matched six-sound before/after desktop captures and mobile light/dark
+scratch evidence are in `/tmp/medley-row-evidence/`; desktop after was inspected.
+Security: PASS for scope: presentation-only CSS and derived row count; existing API,
+private state and playback boundaries remain unchanged.
+
+Aesthetic-and-clear checks:
+
+1. Minimalism: existing rows/controls retained; no spacer elements or extra chrome.
+2. Controls: native buttons, labels and disclosure semantics retained.
+3. Motion: no animation added; reduced-motion captures remain static.
+4. Scannability: shared heading and content tracks align corresponding dividers;
+   16px regular/20px first-row padding keeps control centers aligned too.
+5. Legibility: no fixed row heights; long names, editing and larger text can grow a
+   shared row. Existing inherited fonts, theme colors and focus indicators remain.
+6. Accessibility: DOM/focus order unchanged; existing keyboard task checks pass.
+   125% text check confirms shared geometry. Screen-reader speech not tested.
+
+Block contract: shared parent grid spans one heading plus the larger of six rows
+or library length. Each panel spans those tracks via subgrid; rule/library wrappers
+use display:contents without overriding the library's hidden state. Rendered tests
+verify long lists, rename growth, collapse and empty states; mobile stays stacked.
