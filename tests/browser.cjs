@@ -15,12 +15,13 @@ assert.equal((await page.request.post(base+'/rule',{data:{workspace:'w1',status:
 await page.addInitScript(()=>{window.showOpenFilePicker=undefined;});
 await page.goto(base+'/#'+token);await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);
 assert.equal(await page.locator('.rule').count(),5);
-assert.equal(await page.locator('#manage-library').getAttribute('aria-expanded'),'true');
-await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
-assert.equal(await page.locator('#library-files').isVisible(),false);
-await page.getByRole('button',{name:'Manage imported sounds',exact:true}).click();
+assert.equal(await page.locator('#manage-library').count(),0);
+assert.equal(await page.locator('#library-files').isVisible(),true);
 const columns=await page.evaluate(()=>{const left=document.querySelector('section[aria-labelledby="rules-heading"]').getBoundingClientRect();const right=document.querySelector('section[aria-labelledby="library-heading"]').getBoundingClientRect();return {left:left.x,right:right.x,gap:right.x-left.right,topDifference:Math.abs(left.y-right.y)};});
 assert.ok(columns.right>columns.left);assert.equal(columns.gap,20);assert.equal(columns.topDifference,0);
+const headingLayout=await page.evaluate(()=>{const title=document.querySelector('h1').getBoundingClientRect();const settings=document.querySelector('section[aria-labelledby="playback-heading"]').getBoundingClientRect();const library=document.querySelector('section[aria-labelledby="library-heading"]').getBoundingClientRect();const workspaceHeading=document.getElementById('rules-heading').getBoundingClientRect();const refresh=document.getElementById('refresh').getBoundingClientRect();const soundsHeading=document.getElementById('library-heading').getBoundingClientRect();const upload=document.getElementById('choose-audio').getBoundingClientRect();return {settingsX:settings.x,libraryX:library.x,titleX:title.x,titleY:title.y,settingsBottom:settings.bottom,workspaceSameRow:Math.abs(workspaceHeading.y+workspaceHeading.height/2-refresh.y-refresh.height/2)<12,soundsSameRow:Math.abs(soundsHeading.y+soundsHeading.height/2-upload.y-upload.height/2)<12};});
+assert.equal(headingLayout.settingsX,headingLayout.libraryX);assert.ok(headingLayout.settingsX>headingLayout.titleX);assert.ok(headingLayout.titleY<headingLayout.settingsBottom);assert.ok(headingLayout.workspaceSameRow);assert.ok(headingLayout.soundsSameRow);
+
 await page.evaluate(()=>{model.audio=Array.from({length:7},(_,i)=>({id:'example'+i,name:'Example sound '+i+(i===2?' with a longer label that wraps':'')}));drawLibrary();});
 async function checkAlignedRows() {
   const differences=await page.evaluate(()=>{const left=[...document.querySelectorAll('.workspace-row,.rule')].map(el=>el.getBoundingClientRect());const right=[...document.querySelectorAll('.library-file')].map(el=>el.getBoundingClientRect());return left.map((row,i)=>Math.max(Math.abs(row.y-right[i].y),Math.abs(row.height-right[i].height)));});
@@ -75,7 +76,7 @@ await page.evaluate(()=>{HTMLMediaElement.prototype.play=window.originalPlay;});
 await page.reload();await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);assert.equal(await page.locator('#status-done').inputValue(),custom);
 await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
 await page.locator('#upload').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid')});await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
-await page.getByRole('button',{name:'Refresh workspaces',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
+await page.getByRole('button',{name:'Refresh',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
 await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
 assert.equal(await page.locator('#library-files').isVisible(),true);
 assert.equal(await page.getByRole('heading',{name:'My Workspaces',exact:true}).isVisible(),true);
