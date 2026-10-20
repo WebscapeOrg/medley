@@ -67,7 +67,7 @@ function drawLibrary() {
         await request('/remove',{id:audio.id});
         $('player').pause(); $('player').hidden=true;
         savedRules=undefined; $('undo').hidden=true;
-        await load(); $('manage-library').focus();
+        await load(); $('choose-audio').focus();
       });
     };
     const rename = document.createElement('button'); rename.textContent = 'Rename';
@@ -109,11 +109,6 @@ function editSoundName(audio, row, returnFocus) {
   };
   form.append(label,input,actions,error); row.replaceChildren(form); input.focus(); input.select();
 }
-$('manage-library').onclick = () => {
-  const expanded = $('manage-library').getAttribute('aria-expanded') !== 'true';
-  $('manage-library').setAttribute('aria-expanded',String(expanded));
-  $('library-files').hidden = !expanded;
-};
 async function load() {
   const selected = $('workspace').value;
   model = await request('/api');

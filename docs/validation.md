@@ -490,3 +490,39 @@ Block contract: shared parent grid spans one heading plus the larger of six rows
 or library length. Each panel spans those tracks via subgrid; rule/library wrappers
 use display:contents without overriding the library's hidden state. Rendered tests
 verify long lists, rename growth, collapse and empty states; mobile stays stacked.
+
+## Compact settings/header layout — 2026-10-20
+
+Dave's annotated layout moves Settings into the right side of the page header,
+aligned with My Sounds. My Workspaces now has Refresh and Reset beside its heading;
+My Sounds has Import beside its heading. The redundant management toggle is removed,
+so its list is always visible. After removing a sound, focus returns to Import.
+Narrow screens retain stacked title/settings/panels, native controls and wrapping.
+
+Validation: 16 Python tests and Chromium browser suite pass. Rendered assertions
+check Settings/My Sounds horizontal alignment, heading/button co-location and the
+absence of the old toggle. Shared row-height tests still pass at 1200/1280/1600px,
+including wrapping names, edit mode and larger text. Import/preview/rename/remove,
+reset/undo, settings and fixture uninstall flows pass. Synthetic six-sound matching
+before/after and mobile light/dark captures are outside source at
+`/tmp/medley-compact-settings-evidence/`; desktop/mobile after visually inspected.
+Security: PASS for scope. Presentation and focus-target changes only; existing API,
+private storage, token validation and playback boundaries unchanged.
+
+Aesthetic-and-clear checks:
+
+1. Minimalism: redundant management button removed; existing Settings content moved.
+2. Affordances: native labeled Refresh/Reset/Import buttons retained; focus after
+   removal lands on an existing visible button instead of the removed toggle.
+3. Motion: no animation introduced; mobile dark capture uses reduced motion.
+4. Scannability: two aligned header columns; controls beside panel headings; shared
+   row dividers preserved. Heading controls wrap on narrow screens.
+5. Legibility: existing inherited type, theme contrast and focus indicators retained;
+   larger-text row checks and narrow overflow tests pass.
+6. Accessibility: DOM order remains title, Settings, feedback, My Workspaces, My Sounds.
+   Existing keyboard preview/edit/cancel flows pass; no screen-reader speech test.
+
+Block contract: no vendored block. Header has title and Settings as its two children;
+each panel heading still groups title/info separately from its actions. Removing the
+management toggle leaves no stale handlers or focus references. Shared content-row
+subgrids retain corresponding row tops and heights.
