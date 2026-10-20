@@ -17,8 +17,10 @@ await page.locator('#workspace').selectOption('w2');assert.equal(await page.loca
 await page.locator('#workspace').selectOption('w1');assert.equal(await page.locator('#status-done').inputValue(),'none');
 await page.getByRole('button',{name:'Reset all to default',exact:true}).click();await page.getByText('All sounds reset to default. You can undo this reset.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
 await page.getByRole('button',{name:'Undo reset',exact:true}).click();await page.getByText('Previous sound choices restored.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'none');
-await page.locator('#upload').setInputFiles('assets/done.mp3');await page.getByRole('button',{name:'Import MP3',exact:true}).click();await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
+await page.locator('#upload').setInputFiles('assets/done.mp3');await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
 assert.equal(await page.locator('#status-done option').count(),3);
+assert.equal(await page.locator('#status-done option').last().textContent(),'done');
+assert.equal(await page.locator('#import').count(),0);
 const custom=await page.locator('#status-done option').last().getAttribute('value');await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
 await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('Playing preview. Use the audio controls to stop.',{exact:true}).waitFor();assert.equal(await page.locator('#player').isVisible(),true);
 await page.waitForFunction(()=>document.getElementById('player').currentTime>0);
@@ -32,7 +34,7 @@ assert.equal(await page.locator('#player').isVisible(),true);assert.equal(await 
 await page.evaluate(()=>{HTMLMediaElement.prototype.play=window.originalPlay;});
 await page.reload();await page.getByText('Settings ready. Changes save immediately.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),custom);
 await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
-await page.getByRole('button',{name:'Import MP3',exact:true}).click();await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
+await page.locator('#upload').setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('invalid')});await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3/);
 await page.getByRole('button',{name:'Refresh workspaces',exact:true}).click();await page.getByText('Workspaces refreshed.',{exact:true}).waitFor();
 await page.screenshot({path:'docs/desktop.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});await page.screenshot({path:'docs/mobile.png',fullPage:true});
