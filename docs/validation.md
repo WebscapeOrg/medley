@@ -174,3 +174,37 @@ Aesthetic-and-clear checks: (1) list initially collapsed; (2) visible named acti
 wrapping long names, mobile overflow test passes; (6) native keyboard controls and
 existing keyboard test pass, screen-reader/manual zoom not independently tested.
 No vendored layout extended. Synthetic captures refreshed by browser tests.
+
+## Enabled switch, safe uninstall and WAV import — 2026-10-20
+
+Top section now has a native checkbox exposed as a switch, Enabled/Disabled state,
+and a separate Uninstall Medley button. Uninstall confirms intent, restores the
+previous sound-enabled value through the existing activation rollback path, then
+unregisters Medley. Config/audio remain. No real installation was removed in testing.
+The same operation is exposed as medley.uninstall. Standard herdr removal still
+bypasses cleanup because herdr 0.9.5 has no uninstall lifecycle hook.
+
+WAV files are validated as WAV audio, converted locally with ffmpeg to MP3, and
+stored under the converted content hash. Input/output limits are 20 MB, conversion
+has a 30-second timeout, temporary files are cleaned on failure. Existing MP3s are
+not re-encoded. A real synthetic WAV conversion was decoded with ffprobe as MP3.
+15 Python tests passed, including restoration-before-unregister and abort-on-restore
+failure. Chromium checks passed, including cancel/confirm uninstall against a
+fixture that does not invoke real herdr. Synthetic layout captures refreshed.
+
+Control-and-feedback: 1 busy/success messages retained; 2 uninstall cancellable,
+settings retained; 3 confirmation and restore-before-remove prevent muted uninstall;
+4 failed unregister explains disabled state and retry; 5 failures preserve library;
+6 immediate busy response; 7 conversion bounded by timeout and size, busy state
+provided; 8 no new navigation, uninstall ends with close-tab guidance.
+Input-and-interaction: 1 MP3/WAV and size validation; 2 actionable file errors;
+3 native switch with accessible label, native uninstall button; 4 specific destructive
+label and confirmation; 5 saved previous sound state reused; 6 no new reset/clear;
+7 no password fields; 8 switch represents one boolean, dropdowns unchanged.
+Aesthetic-and-clear: 1 top controls grouped without new screen; 2 named standard
+controls; 3 no animated motion; 4 headings/state text retained; 5 theme tokens and
+scalable fonts reused, mobile overflow test passed; 6 keyboard browser test passes,
+manual screen-reader and magnification testing not performed.
+Vendored block contract: none. Security: PASS for authenticated endpoint routing,
+argv subprocess execution, audio validation and bounded conversion; no cloud upload
+or new network boundary. Actual live uninstall deliberately not exercised.

@@ -53,5 +53,10 @@ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});await page.screenshot({path:'docs/dark.png',fullPage:true});
 await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.activeElement.tagName!=='BODY'));
+page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Uninstall Medley',exact:true}).click();
+assert.equal(await page.locator('#enabled').isVisible(),true);
+page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Uninstall Medley',exact:true}).click();
+await page.getByText('Medley uninstalled. You can close this tab.',{exact:true}).waitFor();
+assert.equal(await page.locator('#enabled').isVisible(),false);
 assert.deepEqual(errors,[]);console.log('PASS: browser import, rule persistence, workspace isolation, quiet, resets, undo, preview, reload, recovery, responsive layout, keyboard, auth rejection; no JS errors');await browser.close();fixture.kill();
 })().catch(e=>{console.error(e);process.exit(1)});

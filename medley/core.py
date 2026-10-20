@@ -80,21 +80,38 @@ def library():
 
 
 def import_audio(name, content):
-    if not name.lower().endswith('.mp3') or not content or len(content) > MAX_AUDIO:
-        raise ValueError('Choose an MP3 file between 1 byte and 20 MB.')
+    if not name.lower().endswith(('.mp3', '.wav')) or not content or len(content) > MAX_AUDIO:
+        raise ValueError('Choose an MP3 or WAV file between 1 byte and 20 MB.')
     if not shutil.which('ffprobe'):
         raise ValueError('Install ffmpeg to validate imported audio.')
     directory = config_dir() / 'audio'
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    fd, temporary = tempfile.mkstemp(suffix='.mp3', dir=directory)
+    fd, temporary = tempfile.mkstemp(suffix=Path(name).suffix.lower(), dir=directory)
     try:
         with os.fdopen(fd, 'wb') as stream:
             stream.write(content)
-        probe = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_name,codec_type',
+        probe = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_name,codec_type:format=format_name',
                                 '-of', 'json', temporary], capture_output=True, text=True, timeout=10)
-        streams = json.loads(probe.stdout or '{}').get('streams', [])
-        if probe.returncode or not any(s.get('codec_type') == 'audio' and s.get('codec_name') == 'mp3' for s in streams):
-            raise ValueError('This file does not contain valid MP3 audio.')
+        metadata = json.loads(probe.stdout or '{}')
+        streams = metadata.get('streams', [])
+        if probe.returncode or not any(s.get('codec_type') == 'audio' and (s.get('codec_name') == 'mp3' if name.lower().endswith('.mp3') else metadata.get('format', {}).get('format_name') == 'wav') for s in streams):
+            raise ValueError('This file does not contain valid MP3 or WAV audio.')
+        if name.lower().endswith('.wav'):
+            if not streams or not any(stream.get('codec_type') == 'audio' for stream in streams):
+                raise ValueError('This file does not contain valid WAV audio.')
+            converted = temporary + '.mp3'
+            try:
+                subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', temporary,
+                                '-map', '0:a:0', '-vn', '-codec:a', 'libmp3lame', '-q:a', '2',
+                                '-fs', str(MAX_AUDIO + 1), '-y', converted],
+                               check=True, capture_output=True, timeout=30)
+                content = Path(converted).read_bytes()
+                if not content or len(content) > MAX_AUDIO:
+                    raise ValueError('Converted audio exceeds the 20 MB limit.')
+                os.replace(converted, temporary)
+            finally:
+                Path(converted).unlink(missing_ok=True)
+            name = str(Path(name).with_suffix('.mp3'))
         key = hashlib.sha256(content).hexdigest()
         with locked(config_dir()):
             os.replace(temporary, directory / (key + '.mp3'))
@@ -267,3 +284,12 @@ def activate(enabled):
         path.write_text(original)
         subprocess.run([os.environ.get('HERDR_BIN_PATH', 'herdr'), 'server', 'reload-config'], capture_output=True, timeout=8)
         raise
+
+
+def uninstall():
+    activate(False)
+    try:
+        subprocess.run([os.environ.get('HERDR_BIN_PATH', 'herdr'), 'plugin', 'uninstall', 'medley'],
+                       check=True, capture_output=True, timeout=15)
+    except Exception as error:
+        raise ValueError('Medley is disabled, but uninstall failed. Retry Uninstall or run herdr plugin uninstall medley.') from error

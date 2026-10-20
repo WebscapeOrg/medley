@@ -59,7 +59,9 @@ def serve(open_browser=True, port=0):
                 if not 0 < length <= core.MAX_AUDIO * 2:
                     raise ValueError('Request is empty or too large. Maximum audio size is 20 MB.')
                 data = json.loads(self.rfile.read(length))
-                if self.path == '/remove':
+                if self.path == '/uninstall':
+                    core.uninstall()
+                elif self.path == '/remove':
                     core.remove_audio(data['id'])
                 elif self.path == '/rule':
                     core.set_rule(data['workspace'], data['status'], data['choice'])
@@ -115,7 +117,7 @@ def serve(open_browser=True, port=0):
 
 def main():
     parser = argparse.ArgumentParser(description='Medley — workspace sounds for herdr')
-    parser.add_argument('command', choices=['settings', 'event', 'enable', 'disable', 'import'])
+    parser.add_argument('command', choices=['settings', 'event', 'enable', 'disable', 'uninstall', 'import'])
     parser.add_argument('path', nargs='?')
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--port', type=int, default=0)
@@ -129,6 +131,8 @@ def main():
             core.activate(True)
         elif args.command == 'disable':
             core.activate(False)
+        elif args.command == 'uninstall':
+            core.uninstall()
         elif args.command == 'import':
             if not args.path:
                 parser.error('import requires a file path')
