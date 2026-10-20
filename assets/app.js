@@ -11,17 +11,29 @@ async function request(path, data) {
   if (!response.ok) throw new Error(result.error || 'The request failed. Try again.');
   return result;
 }
-async function run(message, operation) {
+async function run(message, operation, pending = 'Saving…') {
   const focusedId = document.activeElement.id;
   $('error').hidden = true;
   $('feedback').hidden = false;
-  $('feedback').textContent = 'Saving…';
+  $('feedback').textContent = pending;
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
   try {const result = await operation(); $('feedback').textContent = result || message;}
   catch (error) {try {await load();} catch (_) {} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
   finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = false); if(focusedId && $(focusedId)) $(focusedId).focus();}
 }
 function option(value, text) {const item = document.createElement('option'); item.value = value; item.textContent = text; return item;}
+function previewSound(data) {
+  return run('Playing preview. Use the audio controls to stop.', async () => {
+      const response = await fetch('/preview', {method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify(data)});
+      if (!response.ok) throw new Error((await response.json()).error);
+      if (response.headers.get('Content-Type').includes('application/json')) {$('player').pause();$('player').hidden=true;return 'This sound is set to quiet.';}
+      if ($('player').src) URL.revokeObjectURL($('player').src);
+      $('player').pause();
+      $('player').src=URL.createObjectURL(await response.blob());$('player').hidden=false;
+      try {await $('player').play();}
+      catch (_) {throw new Error('The browser could not start the preview. Press Play in the audio controls to try again.');}
+  }, 'Loading preview…');
+}
 function drawRules() {
   const workspace = $('workspace').value;
   $('rules').replaceChildren();
@@ -35,16 +47,7 @@ function drawRules() {
     select.value = model.settings.rules[workspace]?.[status] || 'default';
     select.onchange = () => run('Sound saved.', async () => {await request('/rule',{workspace,status,choice:select.value}); await load();});
     const preview = document.createElement('button'); preview.textContent = 'Preview'; preview.setAttribute('aria-label','Preview ' + label.textContent + ' sound');
-    preview.onclick = () => run('Playing preview. Use the audio controls to stop.', async () => {
-      const response = await fetch('/preview', {method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify({workspace,status})});
-      if (!response.ok) throw new Error((await response.json()).error);
-      if (response.headers.get('Content-Type').includes('application/json')) {$('player').pause();$('player').hidden=true;return 'This sound is set to quiet.';}
-      if ($('player').src) URL.revokeObjectURL($('player').src);
-      $('player').pause();
-      $('player').src=URL.createObjectURL(await response.blob());$('player').hidden=false;
-      try {await $('player').play();}
-      catch (_) {throw new Error('The browser could not start the preview. Press Play in the audio controls to try again.');}
-    });
+    preview.onclick = () => previewSound({workspace,status});
     const reset = document.createElement('button'); reset.textContent = 'Reset'; reset.setAttribute('aria-label','Reset ' + label.textContent + ' to default');
     reset.onclick = () => run('Sound reset to default.',async () => {await request('/rule',{workspace,status,choice:'default'});await load();});
     row.append(label,select,preview,reset); $('rules').append(row);
@@ -71,7 +74,10 @@ function drawLibrary() {
     rename.setAttribute('aria-label','Rename ' + name.textContent);
     rename.onclick = () => editSoundName(audio, row, rename.id);
     const actions = document.createElement('div'); actions.className = 'sound-actions';
-    actions.append(rename,remove);
+    const preview = document.createElement('button'); preview.textContent = 'Preview';
+    preview.id = 'preview-' + audio.id; preview.setAttribute('aria-label','Preview ' + name.textContent);
+    preview.onclick = () => previewSound({id:audio.id});
+    actions.append(preview,rename,remove);
     row.append(name,actions); $('library-files').append(row);
   }
   if (!model.audio.length) $('library-files').textContent='No imported sounds.';
