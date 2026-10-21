@@ -554,3 +554,40 @@ Block contract: no vendored block. Header remains two children (title, controls)
 and desktop panels retain shared subgrid tracks; rendered row checks pass.
 Security: PASS for existing token rejection checks on API, preview, rename and rule;
 no networking, credential, storage or backend behavior changed.
+
+## Preview success banner removed — 2026-10-21
+
+Successful previews now leave only the native audio controls. Loading feedback,
+quiet-selection messages and error/recovery text remain. Other save confirmations
+are unchanged. Both workspace and library previews use the same path.
+
+Validation: 16 Python tests pass. Chromium checks cover preview playback without
+success feedback, a deliberately held request showing Loading preview and disabled
+controls, quiet selections stopping playback, and blocked autoplay retaining the
+player and retry guidance. Synthetic matching dark desktop captures are outside
+source at /tmp/medley-preview-evidence/before.png and after.png; after inspected.
+No private workspace names, audio or mail are included.
+
+Control-and-feedback checks:
+1. Status: loading stays visible; native controls provide playback state; redundant
+   success copy removed. Delayed-response and completed-playback checks cover both.
+2. Control: native pause/replay controls remain visible; quiet stops the player.
+3. Prevention: controls remain disabled during the request, preventing duplicate actions.
+4. Recovery: autoplay rejection keeps the player and explicit Press Play guidance.
+5. Recovery cost: no rules or library content are changed by preview; existing tests cover it.
+6. Response thresholds: pending feedback appears before awaiting the request; held-response
+   test checks that transition. No latency benchmark or new response-time claim.
+7. Longer operations: existing loading indication retained; no new long operation introduced.
+8. Navigation: no routing, history or navigation code changed.
+
+Aesthetic-and-clear checks:
+1. Minimalism: removed the duplicate playback banner while retaining controls.
+2. Affordances: native audio controls and named Preview buttons unchanged.
+3. Motion: no animation added; reduced-motion browser case still covered.
+4. Scanning: synthetic capture confirms the redundant text block no longer separates header/player.
+5. Text/contrast: no font, color or zoom changes; enlarged-text layout checks still pass.
+6. Accessibility: keyboard preview and focus checks pass; player retains its accessible name.
+   Screen-reader playback operation not manually verified.
+Block contract: no vendored block or panel grouping changed; shared row alignment checks pass.
+Security: PASS for existing API/preview/rename/rule token rejection checks; no backend,
+credential, resource-loading or networking boundary changed.

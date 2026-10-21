@@ -17,13 +17,13 @@ async function run(message, operation, pending = 'Saving…') {
   $('feedback').hidden = false;
   $('feedback').textContent = pending;
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
-  try {const result = await operation(); $('feedback').textContent = result || message;}
+  try {const result = await operation(); $('feedback').textContent = result || message; $('feedback').hidden = !$('feedback').textContent;}
   catch (error) {try {await load();} catch (_) {} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
   finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = false); if(focusedId && $(focusedId)) $(focusedId).focus();}
 }
 function option(value, text) {const item = document.createElement('option'); item.value = value; item.textContent = text; return item;}
 function previewSound(data) {
-  return run('Playing preview. Use the audio controls to stop.', async () => {
+  return run('', async () => {
       const response = await fetch('/preview', {method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify(data)});
       if (!response.ok) throw new Error((await response.json()).error);
       if (response.headers.get('Content-Type').includes('application/json')) {$('player').pause();$('player').hidden=true;return 'This sound is set to quiet.';}
