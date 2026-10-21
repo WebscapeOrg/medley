@@ -22,14 +22,14 @@ herdr plugin link . --enabled
 python3 medley.py settings
 ```
 
-The settings command prints a private localhost URL and opens it in your browser. Keep that command running while editing; Ctrl+C closes the settings server. Sound rules continue working through herdr's event hooks after settings closes. A refresh in the browser preserves its access token in tab session storage.
+The settings command prints a private localhost URL and opens it in your browser. Keep that command running while editing; Ctrl+C closes the settings server. Sound rules continue working through herdr's event hooks after settings closes. A refresh in the browser preserves its access token in tab session storage. **Relaunch**, beside Uninstall Medley, restarts only this settings server with the current code and reloads the same tab. It keeps imported sounds, saved choices and the enabled setting; herdr and its agents keep running. Older settings servers without Relaunch support need to be opened once with the settings command above.
 
 ## Choose your sounds
 
 1. Choose an MP3 or WAV, up to 20 MB; it imports immediately without another button press. Medley validates the audio, converts WAV to MP3 locally, and copies it into its private library, so moving or deleting the original does not break playback.
 2. Choose a workspace. Each of its five statuses has a separate audio selection.
 3. Select a library file (displayed without its .mp3 extension), **None · quiet**, or **Default**. Changes save immediately.
-4. Use **Preview** to play the selected sound immediately in your browser. The audio controls remain available to stop or replay it. Silent selections are identified as quiet; if the browser blocks playback, use Play in the controls to retry. **Reset** restores one cell; **Reset all to default** restores every workspace and offers Undo until settings closes or another reset replaces it.
+4. Use **Preview** to play the selected sound immediately in your browser. A temporary row directly beneath the sound shows audio controls to stop or replay it. Use **Close preview** to dismiss it; previewing another sound moves the player there. Silent selections are identified as quiet; if the browser blocks playback, use Play in the controls to retry. **Reset** restores one cell; **Reset all to default** restores every workspace and offers Undo until settings closes or another reset replaces it.
 
 The statuses are Idle, Working, Needs attention (herdr's `blocked`), Done, and Unknown. Rules use herdr's workspace IDs, so renaming a workspace retains its choices. Recreating a deleted workspace or using a different herdr session does not transfer choices automatically. Keep a separate plugin config directory per independent session.
 

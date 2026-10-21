@@ -6,13 +6,15 @@ import os
 from pathlib import Path
 import secrets
 import sys
+import threading
 import webbrowser
 
 from . import core
 
 
 def serve(open_browser=True, port=0):
-    token = secrets.token_urlsafe(32)
+    token = os.environ.pop("MEDLEY_RELAUNCH_TOKEN", None) or secrets.token_urlsafe(32)
+    relaunch = threading.Event()
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -59,7 +61,15 @@ def serve(open_browser=True, port=0):
                 if not 0 < length <= core.MAX_AUDIO * 2:
                     raise ValueError('Request is empty or too large. Maximum audio size is 20 MB.')
                 data = json.loads(self.rfile.read(length))
-                if self.path == '/uninstall':
+                if self.path == '/relaunch':
+                    if not relaunch.is_set():
+                        relaunch.set()
+                        self.reply(200, {'ok': True})
+                        threading.Thread(target=server.shutdown, daemon=True).start()
+                    else:
+                        self.reply(409, {'error': 'Medley is already relaunching. Wait a moment, then refresh.'})
+                    return
+                elif self.path == '/uninstall':
                     core.uninstall()
                 elif self.path == '/rename':
                     core.rename_audio(data['id'], data['name'])
@@ -120,6 +130,10 @@ def serve(open_browser=True, port=0):
         pass
     finally:
         server.server_close()
+    if relaunch.is_set():
+        environment = dict(os.environ, MEDLEY_RELAUNCH_TOKEN=token)
+        os.execve(sys.executable, [sys.executable, str(core.ROOT / 'medley.py'),
+                                 'settings', '--no-browser', '--port', str(server.server_port)], environment)
 
 
 def main():

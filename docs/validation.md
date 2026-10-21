@@ -591,3 +591,44 @@ Aesthetic-and-clear checks:
 Block contract: no vendored block or panel grouping changed; shared row alignment checks pass.
 Security: PASS for existing API/preview/rename/rule token rejection checks; no backend,
 credential, resource-loading or networking boundary changed.
+
+## Relaunch and inline preview — 2026-10-21
+
+Scope: Relaunch beside Uninstall restarts only the settings process with the same loopback port and private token, then reloads the same tab. The single browser player now occupies a temporary row below its originating workspace status or imported sound. Close stops playback and restores focus; another preview moves the row. Redraws/rename/removal safely detach the player before replacing its owner. Saved choices and audio are unchanged by relaunch.
+
+Verification: 17 Python tests, including two real successive process execs in an isolated configuration, authentication rejection, and byte-for-byte configuration preservation; Chromium checks both preview locations, replacement, close/focus, quiet/autoplay rejection, pending state, row alignment, 320px layout, keyboard Relaunch, failed relaunch recovery and successful same-tab reload (browser restart response mocked; actual exec covered separately). Existing import/rename/remove/reset/undo checks pass. Matched dark synthetic captures are outside the checkout under `/tmp/medley-preview-evidence/relaunch-{before,after}.png`.
+
+Block contract: no vendored block. Preserve the two-column subgrid's shared row boundaries and the header's wrapping controls. The temporary preview is a full-width child of its originating row, allowing the shared track to grow without an extra unmatched grid track. Rendered alignment was checked with the preview open and closed; mobile controls wrap within the viewport.
+
+### Control and feedback checks
+
+1. Status: checked pending preview/relaunch and completion; pending messages and disabled actions remain, successful preview has no redundant banner, relaunch reloads the tab. Passed.
+2. Freedom: checked native pause/replay and Close preview; closing stops sound and focuses the originating Preview. Relaunch can be left by closing the tab; it never stops herdr. Passed.
+3. Prevention: checked repeated operations, button order and authentication; controls disable during requests, Relaunch is neutral and Uninstall remains soft red with confirmation. Passed.
+4. Recovery: checked rejected autoplay and failed relaunch; player stays available for manual Play, errors remain readable, Relaunch becomes available again. Passed. A settings process that cannot start again requires reopening the settings command.
+5. Error cost: checked relaunch persistence and preview redraw; imported audio, assignments and enabled/native settings survive, no workspace mutation from preview. Passed.
+6. Response thresholds: checked gated preview request and relaunch; immediate loading feedback precedes the wait. No silent wait. Passed.
+7. Longer operations: readiness polling has bounded attempts and per-request timeout; controls cannot double-submit. No percentage is invented for process startup. Passed; startup failure exposes a recovery message rather than polling indefinitely.
+8. Navigation: checked same-tab reload and session token preservation; no new history entry, new tab or navigation trap is introduced by Relaunch. Passed.
+
+### Aesthetic and clarity checks
+
+1. Minimalism: checked rendered page; only one local preview row, no permanent top player or success banner. Passed.
+2. Affordances: checked native labeled Relaunch/Close buttons and audio controls. Passed.
+3. Motion: no added animation or continuous decoration; only explicitly requested sound. Reduced-motion emulation retains controls. Passed.
+4. Scanning: checked screenshot and shared dividers; player is below the selected sound and header actions remain grouped. Passed.
+5. Enlargement/contrast: existing theme colors and focus styles retained; 125% type and narrow viewport checks pass, no horizontal overflow in active-player mobile check. No new text/background color pair. Passed.
+6. Accessible completion: keyboard activation, Close focus restoration, native audio semantics and visible focus exercised in Chromium. Passed for keyboard/DOM semantics; an actual screen reader and OS magnifier session were NOT VERIFIED.
+
+### Input and interaction checks
+
+1. Prevention: no new free-text inputs; fixed restart endpoint and single in-flight action. Passed.
+2. Error recovery: injected restart failure retains controls and exposes a readable error. Passed.
+3. Standard controls: native buttons/audio, visible labels and existing focus outlines, keyboard Enter tested. Passed.
+4. Platform conventions: Relaunch precedes Uninstall, neutral styling distinct from destructive action; no autofocus on Uninstall. Passed.
+5. Reuse known information: same port/token/config and selected rules, no questions or credentials requested. Passed.
+6. Reset/Clear: no new reset/clear controls; existing scoped reset/undo remains tested. Passed within scope.
+7. Password inspection: no password field added or involved. Not applicable.
+8. Selection semantics: existing enabled switch and sound selects unchanged, no new selection control. Passed within scope.
+
+Security: PASS for affected loopback API/token boundary, no token in restart argv, fixed executable/argv with no shell, no arbitrary restart command, private state preservation and browser-only preview. The token is carried in the replacement process environment and consumed before child commands run. No herdr/agent/Quickshell restart, OAuth, remote network resource, imported-data migration or release was involved. Full unrelated security/accessibility audits were not performed.

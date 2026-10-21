@@ -11,31 +11,45 @@ async function request(path, data) {
   if (!response.ok) throw new Error(result.error || 'The request failed. Try again.');
   return result;
 }
-async function run(message, operation, pending = 'Saving…') {
+async function run(message, operation, pending = 'Saving…', recover = true) {
   const focusedId = document.activeElement.id;
   $('error').hidden = true;
   $('feedback').hidden = false;
   $('feedback').textContent = pending;
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
   try {const result = await operation(); $('feedback').textContent = result || message; $('feedback').hidden = !$('feedback').textContent;}
-  catch (error) {try {await load();} catch (_) {} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
+  catch (error) {if (recover) {try {await load();} catch (_) {}} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
   finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = false); if(focusedId && $(focusedId)) $(focusedId).focus();}
 }
 function option(value, text) {const item = document.createElement('option'); item.value = value; item.textContent = text; return item;}
-function previewSound(data) {
+function closePreview() {
+  $('player').pause();
+  if ($('player').src) URL.revokeObjectURL($('player').src);
+  $('player').removeAttribute('src'); $('player').hidden = true;
+  $('preview-row').hidden = true;
+  document.querySelector('main').append($('preview-row'));
+}
+$('close-preview').onclick = () => {
+  const button = $('preview-row').parentElement.querySelector('button');
+  closePreview(); button?.focus();
+};
+function previewSound(data, row) {
+  closePreview();
   return run('', async () => {
       const response = await fetch('/preview', {method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify(data)});
       if (!response.ok) throw new Error((await response.json()).error);
-      if (response.headers.get('Content-Type').includes('application/json')) {$('player').pause();$('player').hidden=true;return 'This sound is set to quiet.';}
+      if (response.headers.get('Content-Type').includes('application/json')) {return 'This sound is set to quiet.';}
       if ($('player').src) URL.revokeObjectURL($('player').src);
       $('player').pause();
       $('player').src=URL.createObjectURL(await response.blob());$('player').hidden=false;
+      row.append($('preview-row')); $('preview-row').hidden=false;
       try {await $('player').play();}
       catch (_) {throw new Error('The browser could not start the preview. Press Play in the audio controls to try again.');}
-  }, 'Loading preview…');
+  }, 'Loading preview…', false);
 }
 function drawRules() {
   const workspace = $('workspace').value;
+  if ($('rules').contains($('preview-row'))) closePreview();
   $('rules').replaceChildren();
   if (!workspace) {$('rules').textContent = 'No workspaces found. Open a herdr workspace, then refresh.'; return;}
   for (const status of model.statuses) {
@@ -47,7 +61,7 @@ function drawRules() {
     select.value = model.settings.rules[workspace]?.[status] || 'default';
     select.onchange = () => run('Sound saved.', async () => {await request('/rule',{workspace,status,choice:select.value}); await load();});
     const preview = document.createElement('button'); preview.textContent = 'Preview'; preview.setAttribute('aria-label','Preview ' + label.textContent + ' sound');
-    preview.onclick = () => previewSound({workspace,status});
+    preview.onclick = () => previewSound({workspace,status}, row);
     const reset = document.createElement('button'); reset.textContent = 'Reset'; reset.setAttribute('aria-label','Reset ' + label.textContent + ' to default');
     reset.onclick = () => run('Sound reset to default.',async () => {await request('/rule',{workspace,status,choice:'default'});await load();});
     row.append(label,select,preview,reset); $('rules').append(row);
@@ -55,6 +69,7 @@ function drawRules() {
 }
 function drawLibrary() {
   document.querySelector('.workspace-sounds-layout').style.setProperty('--panel-rows',Math.max(6,model.audio.length) + 1);
+  if ($('library-files').contains($('preview-row'))) closePreview();
   $('library-files').replaceChildren();
   for (const audio of model.audio.slice().sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}))) {
     const row = document.createElement('div'); row.className = 'library-file';
@@ -65,7 +80,7 @@ function drawLibrary() {
       if (!confirm('Remove “' + name.textContent + '” from the library? Every workspace/status using it will return to Default. You can import the file again later.')) return;
       return run('Sound removed. Choices using it now use Default.',async () => {
         await request('/remove',{id:audio.id});
-        $('player').pause(); $('player').hidden=true;
+        closePreview();
         savedRules=undefined; $('undo').hidden=true;
         await load(); $('choose-audio').focus();
       });
@@ -77,13 +92,14 @@ function drawLibrary() {
     const actions = document.createElement('div'); actions.className = 'sound-actions';
     const preview = document.createElement('button'); preview.textContent = 'Preview';
     preview.id = 'preview-' + audio.id; preview.setAttribute('aria-label','Preview ' + name.textContent);
-    preview.onclick = () => previewSound({id:audio.id});
+    preview.onclick = () => previewSound({id:audio.id}, row);
     actions.append(preview,rename,remove);
     row.append(name,actions); $('library-files').append(row);
   }
   if (!model.audio.length) $('library-files').textContent='No imported sounds.';
 }
 function editSoundName(audio, row, returnFocus) {
+  if (row.contains($('preview-row'))) closePreview();
   const form = document.createElement('form'); form.className = 'rename-form';
   const label = document.createElement('label'); label.textContent = 'Sound name';
   const input = document.createElement('input'); input.type = 'text'; input.required = true; input.maxLength = 160;
@@ -155,3 +171,17 @@ $('choose-audio').onclick = async () => {
     $('error').textContent = 'The file picker could not open. Try again. ' + error.message; $('error').hidden = false;
   }
 };
+
+$('relaunch').onclick = () => run('', async () => {
+  closePreview();
+  await request('/relaunch', {});
+  await new Promise(resolve => setTimeout(resolve, 750));
+  for (let attempt = 0; attempt < 30; attempt++) {
+    try {
+      const response = await fetch('/api', {headers:{'X-Medley-Token':token}, signal:AbortSignal.timeout(1500)});
+      if (response.ok) {location.reload(); return;}
+    } catch (_) {}
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  throw new Error('Medley has not reopened yet. Refresh this tab to try again.');
+}, 'Relaunching Medley…', false);

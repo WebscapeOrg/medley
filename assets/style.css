@@ -27,3 +27,5 @@ main{max-width:1600px}.workspace-sounds-layout{display:grid;gap:20px;align-items
 .app-heading{margin-bottom:48px}.workspace-sounds-layout .section-heading{padding-bottom:24px;align-items:center;column-gap:24px;row-gap:20px}.workspace-sounds-layout .library-heading{margin-bottom:0}.workspace-sounds-layout .section-heading button{margin-bottom:0}@media(max-width:1199px){.settings-controls{justify-content:flex-start}}
 
 .settings-controls[hidden]{display:none}
+
+.preview-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;grid-column:1/-1;padding:12px 0 0;flex-basis:100%}.preview-row[hidden]{display:none}.preview-row audio{max-width:100%;min-width:0}.library-file:has(.preview-row:not([hidden])){flex-wrap:wrap}
