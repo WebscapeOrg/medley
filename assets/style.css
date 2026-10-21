@@ -28,4 +28,4 @@ main{max-width:1600px}.workspace-sounds-layout{display:grid;gap:20px;align-items
 
 .settings-controls[hidden]{display:none}
 
-.preview-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;grid-column:1/-1;padding:12px 0 0;flex-basis:100%}.preview-row[hidden]{display:none}.preview-row audio{max-width:100%;min-width:0}.library-file:has(.preview-row:not([hidden])){flex-wrap:wrap}
+.preview-row{display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;width:100%;grid-column:1/-1;padding:12px 0 0;flex-basis:100%}.preview-row[hidden]{display:none}.preview-row audio{max-width:100%;min-width:0}.library-file:has(.preview-row:not([hidden])){flex-wrap:wrap}

@@ -632,3 +632,20 @@ Block contract: no vendored block. Preserve the two-column subgrid's shared row 
 8. Selection semantics: existing enabled switch and sound selects unchanged, no new selection control. Passed within scope.
 
 Security: PASS for affected loopback API/token boundary, no token in restart argv, fixed executable/argv with no shell, no arbitrary restart command, private state preservation and browser-only preview. The token is carried in the replacement process environment and consumed before child commands run. No herdr/agent/Quickshell restart, OAuth, remote network resource, imported-data migration or release was involved. Full unrelated security/accessibility audits were not performed.
+
+## Preview alignment follow-up — 2026-10-21
+
+Dave requested removal of Close preview and right alignment of the native player. Removed the button and its handler; the existing full-width preview row now justifies its player to the right. Pause/replay remain native audio controls; selecting a different preview moves the player, and workspace redraw safely stops an owned preview. README updated. No backend change or restart is needed; refresh the tab.
+
+17 Python tests and the Chromium suite pass. Browser assertions check the player's right edge against its row in both panels, absence of Close preview, shared divider alignment, narrow layouts, preview switching, quiet state and autoplay recovery. Matched dark synthetic before/after captures are outside the repository at `/tmp/medley-preview-evidence/alignment-{before,after}.png`.
+
+Aesthetic-and-clear check report:
+
+1. Minimalism: inspected the rendered preview; removed the requested redundant button. The row contains only the native player. Passed.
+2. Standard controls: inspected native audio controls and accessible name; pause/replay remain available without custom replacements. Passed.
+3. Motion: no new animation or automatic sound; previews remain explicitly requested. Existing reduced-motion browser check passes.
+4. Scanning: inspected the synthetic screenshot and tested both row edges; player stays below its originating sound, aligned with the panel's right content edge. Passed.
+5. Legibility/enlargement: existing colors, control sizing and zoom support unchanged; browser checks enlarged text and 320px active-player layout without overflow. Passed within scope.
+6. Accessible completion: keyboard Preview and native audio remain available; removing the button removes its focus handler too. Browser keyboard suite passes. Actual screen-reader and OS magnifier use NOT VERIFIED.
+
+Block contract: no vendored block. The full-width child remains inside its existing shared grid track; right justification changes only its contents. Rendered shared divider alignment remains correct. Security: PASS for this presentation-only change; no API, token, filesystem or network boundary changed, and the existing authentication/restart tests still pass.
