@@ -29,10 +29,6 @@ function closePreview() {
   $('preview-row').hidden = true;
   document.querySelector('main').append($('preview-row'));
 }
-$('close-preview').onclick = () => {
-  const button = $('preview-row').parentElement.querySelector('button');
-  closePreview(); button?.focus();
-};
 function previewSound(data, row) {
   closePreview();
   return run('', async () => {
