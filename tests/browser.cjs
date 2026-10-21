@@ -17,7 +17,7 @@ await page.goto(base+'/#'+token);await page.locator('#status-done').waitFor();as
 assert.equal(await page.locator('.rule').count(),5);
 assert.equal(await page.locator('#manage-library').count(),0);
 assert.equal(await page.getByRole('heading',{name:'Settings',exact:true}).count(),0);
-assert.equal(await page.locator('.settings-controls button').count(),1);
+assert.equal(await page.locator('.settings-controls button').count(),2);
 assert.equal(await page.locator('#library-files').isVisible(),true);
 const columns=await page.evaluate(()=>{const left=document.querySelector('section[aria-labelledby="rules-heading"]').getBoundingClientRect();const right=document.querySelector('section[aria-labelledby="library-heading"]').getBoundingClientRect();return {left:left.x,right:right.x,gap:right.x-left.right,topDifference:Math.abs(left.y-right.y)};});
 assert.ok(columns.right>columns.left);assert.equal(columns.gap,20);assert.equal(columns.topDifference,0);
@@ -31,6 +31,9 @@ async function checkAlignedRows() {
 }
 for (const width of [1200,1280,1600]) {await page.setViewportSize({width,height:1000});await checkAlignedRows();}
 await page.setViewportSize({width:1280,height:1000});
+await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();
+await page.locator('#feedback').waitFor({state:'hidden'});await checkAlignedRows();
+await page.getByRole('button',{name:'Close preview',exact:true}).click();await checkAlignedRows();
 assert.ok(await page.locator('.workspace-sounds-layout .section-heading').first().evaluate(el=>parseFloat(getComputedStyle(el).paddingBottom)>=24));
 await page.screenshot({path:'/tmp/medley-spacing-evidence/populated-desktop.png',fullPage:true});
 await page.getByRole('button',{name:'Rename Example sound 0',exact:true}).click();await checkAlignedRows();
@@ -71,7 +74,10 @@ await page.getByText('Loading preview…',{exact:true}).waitFor();
 assert.equal(await page.getByRole('button',{name:'Preview Done sound',exact:true}).isDisabled(),true);
 releasePreview();
 await page.locator('#feedback').waitFor({state:'hidden'});
-await page.unroute('**/preview');assert.equal(await page.locator('#feedback').isVisible(),false);assert.equal(await page.locator('#player').isVisible(),true);
+await page.unroute('**/preview');
+assert.equal(await page.locator('.rule:has(#status-done) > #preview-row').isVisible(),true);
+assert.ok(await page.locator('#preview-row').evaluate(el=>el.getBoundingClientRect().top >= el.parentElement.querySelector('select').getBoundingClientRect().bottom));
+assert.equal(await page.locator('#feedback').isVisible(),false);assert.equal(await page.locator('#player').isVisible(),true);
 await page.waitForFunction(()=>document.getElementById('player').currentTime>0);
 await page.locator('#status-done').selectOption('none');await page.getByText('Sound saved.',{exact:true}).waitFor();
 await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('This sound is set to quiet.',{exact:true}).waitFor();
@@ -79,7 +85,7 @@ assert.equal(await page.locator('#player').evaluate(p=>p.paused),true);assert.eq
 await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
 await page.evaluate(()=>{window.originalPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=()=>Promise.reject(new DOMException('Blocked','NotAllowedError'));});
 await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();await page.getByText('The browser could not start the preview. Press Play in the audio controls to try again.',{exact:true}).waitFor();
-assert.equal(await page.locator('#player').isVisible(),true);assert.equal(await page.getByRole('button',{name:'Preview Done sound',exact:true}).isEnabled(),true);
+assert.equal(await page.locator('#player').isVisible(),true);assert.equal(await page.locator('.rule:has(#status-done) > #preview-row').isVisible(),true);assert.equal(await page.getByRole('button',{name:'Preview Done sound',exact:true}).isEnabled(),true);
 await page.evaluate(()=>{HTMLMediaElement.prototype.play=window.originalPlay;});
 await page.reload();await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);assert.equal(await page.locator('#status-done').inputValue(),custom);
 await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'default');
@@ -94,7 +100,19 @@ await page.getByRole('button',{name:'Preview done',exact:true}).focus();await pa
 await page.locator('#feedback').waitFor({state:'hidden'});assert.equal(await page.locator('#feedback').isVisible(),false);
 await page.waitForFunction(()=>!document.getElementById('player').paused && document.getElementById('player').currentTime>0);
 assert.equal(await page.locator('#status-done').inputValue(),rulesBeforePreview);
-await page.evaluate(()=>document.getElementById('player').pause());
+assert.equal(await page.locator('.library-file > #preview-row').isVisible(),true);
+await page.getByRole('button',{name:'Close preview',exact:true}).click();
+assert.equal(await page.locator('#preview-row').isVisible(),false);
+assert.equal(await page.locator('#player').evaluate(p=>p.paused),true);
+assert.equal(await page.getByRole('button',{name:'Preview done',exact:true}).evaluate(el=>el===document.activeElement),true);
+await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();
+await page.locator('#feedback').waitFor({state:'hidden'});
+assert.equal(await page.locator('.rule:has(#status-done) > #preview-row').isVisible(),true);
+await page.getByRole('button',{name:'Preview done',exact:true}).click();
+await page.locator('#feedback').waitFor({state:'hidden'});
+assert.equal(await page.locator('.library-file > #preview-row').isVisible(),true);
+assert.equal(await page.locator('#preview-row').count(),1);
+
 await page.setViewportSize({width:320,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 await page.setViewportSize({width:1280,height:1000});
 
@@ -147,7 +165,18 @@ await page.screenshot({path:'docs/desktop.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});await page.screenshot({path:'docs/mobile.png',fullPage:true});
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});await page.screenshot({path:'docs/dark.png',fullPage:true});
-await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.activeElement.tagName!=='BODY'));
+await page.locator('#enabled').focus();await page.keyboard.press('Tab');assert.equal(await page.locator('#relaunch').evaluate(el=>el===document.activeElement),true);
+await page.route('**/relaunch',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Could not relaunch. Try again.'})}));
+await page.getByRole('button',{name:'Relaunch',exact:true}).focus();await page.keyboard.press('Enter');
+await page.getByText('Could not relaunch. Try again.',{exact:true}).waitFor();
+assert.equal(await page.getByRole('button',{name:'Relaunch',exact:true}).isEnabled(),true);
+await page.unroute('**/relaunch');
+await page.route('**/relaunch',route=>route.fulfill({status:200,contentType:'application/json',body:'{"ok":true}'}));
+await page.getByRole('button',{name:'Relaunch',exact:true}).click();
+await page.getByText('Relaunching Medley…',{exact:true}).waitFor();
+await page.waitForEvent('load');await page.locator('#status-done').waitFor();
+assert.equal(await page.locator('#feedback').isVisible(),false);
+await page.unroute('**/relaunch');
 page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Uninstall Medley',exact:true}).click();
 assert.equal(await page.locator('#enabled').isVisible(),true);
 page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Uninstall Medley',exact:true}).click();
