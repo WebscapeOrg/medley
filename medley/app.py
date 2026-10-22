@@ -1,5 +1,8 @@
 import argparse
 import base64
+import errno
+import hmac
+from http.client import HTTPConnection, HTTPException
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -12,8 +15,47 @@ import webbrowser
 from . import core
 
 
-def serve(open_browser=True, port=0):
-    token = os.environ.pop("MEDLEY_RELAUNCH_TOKEN", None) or secrets.token_urlsafe(32)
+DEFAULT_PORT = 43127
+
+
+def settings_token():
+    inherited = os.environ.pop("MEDLEY_RELAUNCH_TOKEN", None)
+    if inherited:
+        return inherited
+    with core.locked(core.config_dir()):
+        path = core.config_dir() / 'settings-access.json'
+        access = core.read_json(path, None)
+        if access is None:
+            access = {'token': secrets.token_urlsafe(32)}
+            core.write_json(path, access)
+        if not isinstance(access, dict) or not isinstance(access.get('token'), str) or len(access['token']) < 32:
+            raise ValueError('The saved settings access key is invalid. Restore settings-access.json from a backup.')
+        path.chmod(0o600)
+        return access['token']
+
+
+def instance_proof(token, challenge):
+    return hmac.digest(token.encode(), challenge.encode(), 'sha256').hex()
+
+
+def matching_server(port, token):
+    challenge = secrets.token_hex(16)
+    connection = HTTPConnection('127.0.0.1', port, timeout=2)
+    try:
+        connection.request('GET', '/instance?challenge=' + challenge)
+        response = connection.getresponse()
+        if response.status != 200:
+            return False
+        proof = json.loads(response.read(4096)).get('proof', '')
+        return isinstance(proof, str) and secrets.compare_digest(proof, instance_proof(token, challenge))
+    except (OSError, HTTPException, ValueError, AttributeError):
+        return False
+    finally:
+        connection.close()
+
+
+def serve(open_browser=True, port=DEFAULT_PORT):
+    token = settings_token()
     relaunch = threading.Event()
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -35,6 +77,13 @@ def serve(open_browser=True, port=0):
             return secrets.compare_digest(self.headers.get('X-Medley-Token', ''), token)
 
         def do_GET(self):
+            if self.path.startswith('/instance?challenge='):
+                challenge = self.path.removeprefix('/instance?challenge=')
+                if len(challenge) == 32 and all(c in '0123456789abcdef' for c in challenge):
+                    self.reply(200, {'proof': instance_proof(token, challenge)})
+                else:
+                    self.reply(400, {'error': 'Invalid settings server check'})
+                return
             if self.path in ('/', '/app.js', '/style.css'):
                 name = {'/': 'index.html', '/app.js': 'app.js', '/style.css': 'style.css'}[self.path]
                 mime = {'/': 'text/html; charset=utf-8', '/app.js': 'text/javascript', '/style.css': 'text/css'}[self.path]
@@ -117,7 +166,19 @@ def serve(open_browser=True, port=0):
             except Exception as error:
                 self.reply(503, {'error': str(error)})
 
-    server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    try:
+        server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
+    except OSError as error:
+        if error.errno != errno.EADDRINUSE:
+            raise
+        if not matching_server(port, token):
+            raise ValueError(f'Port {port} is used by another server. Close that server or choose a different --port.') from None
+        url = f'http://127.0.0.1:{port}/#{token}'
+        print('Medley settings:', url, flush=True)
+        print('Opened the existing Medley settings server.', flush=True)
+        if open_browser:
+            webbrowser.open(url)
+        return
     server.daemon_threads = True
     url = f'http://127.0.0.1:{server.server_port}/#{token}'
     print('Medley settings:', url, flush=True)
@@ -141,7 +202,8 @@ def main():
     parser.add_argument('command', choices=['settings', 'event', 'enable', 'disable', 'uninstall', 'import'])
     parser.add_argument('path', nargs='?')
     parser.add_argument('--no-browser', action='store_true')
-    parser.add_argument('--port', type=int, default=0)
+    parser.add_argument('--port', type=int, default=DEFAULT_PORT,
+                        help=f'Settings port (default: {DEFAULT_PORT}; 0 chooses a temporary port)')
     args = parser.parse_args()
     try:
         if args.command == 'settings':

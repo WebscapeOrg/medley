@@ -22,7 +22,9 @@ herdr plugin link . --enabled
 python3 medley.py settings
 ```
 
-The settings command prints a private localhost URL and opens it in your browser. Keep that command running while editing; Ctrl+C closes the settings server. Sound rules continue working through herdr's event hooks after settings closes. A refresh in the browser preserves its access token in tab session storage. **Relaunch**, beside Uninstall Medley, restarts only this settings server with the current code and reloads the same tab. It keeps imported sounds, saved choices and the enabled setting; herdr and its agents keep running. Older settings servers without Relaunch support need to be opened once with the settings command above.
+The settings command opens a private localhost URL on **port 43127**. Bookmark the full address of that page, including its access key after `#`: the port and key stay the same across fresh launches and Relaunch. The key is stored privately in `settings-access.json` in Medley's config directory, with owner-only permissions. Keep the bookmark private. Opening the settings command again reuses the existing server for that config directory. It checks the server's identity without sending the access key to an unrelated listener; a port conflict with another app gives an error instead of silently changing the port. Use `settings --port NUMBER` for a deliberate override, or `--port 0` for a temporary port.
+
+Keep the settings command running while editing; Ctrl+C closes the settings server. A bookmark does not start a stopped server: run the settings command again after closing it or restarting your computer. Sound rules continue working through herdr's event hooks after settings closes. A refresh in the browser preserves its access token in tab session storage. **Relaunch**, beside Uninstall Medley, restarts only this settings server with the current code and reloads the same tab. It keeps imported sounds, saved choices and the enabled setting; herdr and its agents keep running. An older settings page on a temporary port can remain open; use the settings command once to open the new bookmarkable address.
 
 ## Choose your sounds
 
