@@ -649,3 +649,51 @@ Aesthetic-and-clear check report:
 6. Accessible completion: keyboard Preview and native audio remain available; removing the button removes its focus handler too. Browser keyboard suite passes. Actual screen-reader and OS magnifier use NOT VERIFIED.
 
 Block contract: no vendored block. The full-width child remains inside its existing shared grid track; right justification changes only its contents. Rendered shared divider alignment remains correct. Security: PASS for this presentation-only change; no API, token, filesystem or network boundary changed, and the existing authentication/restart tests still pass.
+
+
+## Bookmarkable settings address — 2026-10-22
+
+Settings now defaults to loopback port 43127 and saves its random access key in an owner-only
+`settings-access.json` under the plugin config directory. The browser retains the key in the URL
+fragment so a normal bookmark can authenticate a fresh tab. Relaunch preserves it; a complete stop
+and restart reuses it. A second launch reopens the existing server after a nonce/HMAC identity
+check. An unrelated port listener receives no access key and is never opened automatically. An
+explicit custom port remains supported; tests and browser fixtures use port 0 for isolation.
+
+23 Python tests and the Chromium suite pass. Added integration checks cover a full stop/restart,
+server reuse, authenticated data access and unauthenticated rejection, foreign port ownership,
+access-key permissions and corrupt-key preservation. The browser suite opens the address in a
+fresh context without prior session storage. A live check on Enterprise verified the bookmark in
+fresh browser contexts and settings-only Relaunch on the fixed port. All 10 original private
+config/audio files remained byte-for-byte unchanged; the only new app-owned file is the access key.
+No herdr server, agent or Quickshell restart was involved. No visual layout changed.
+
+Control-and-feedback check report:
+
+1. System status: startup prints the settings address; a second launch explicitly reports reuse.
+   Verified actual subprocess output. Passed.
+2. Control/freedom: Ctrl+C still closes the owned server; Relaunch remains scoped to settings.
+   Full stop/restart and existing restart integration tests pass; audio rules remain intact.
+3. Error prevention: no silent random-port fallback when the fixed port is busy. Another listener
+   cannot be mistaken for Medley without proving possession of the saved key. Negative test passes.
+4. Error recovery: occupied-port errors explain closing the conflicting server or an explicit
+   port override. A corrupt saved key produces an error instead of invalidating bookmarks by
+   silently rotating it. Both paths tested. Passed within the affected boundary.
+5. Error cost: reuse leaves the current server alive; failed ownership checks do not open another
+   app or disclose the key. Private audio/settings fingerprints unchanged. Passed.
+6. Response thresholds: local readiness/identity checks have a two-second network timeout; normal
+   reuse returns promptly in the subprocess check. No unbounded external service wait added.
+7. Longer operations: no new long-running user operation. The existing Relaunch feedback and
+   bounded retry behavior continue to pass Chromium checks. No new progress indicator needed.
+8. Browser navigation: the full URL stays bookmarkable; a fresh context opens it successfully,
+   and the existing reload, keyboard and browser recovery checks pass. No redirect or history
+   entry is added: replaceState retains the current private fragment.
+
+Block contract: no vendored UI block or layout was changed. Actual screen-reader operation was
+not performed; this change adds no controls. Security: PASS for loopback binding, owner-only
+persistent random access key, authenticated settings/mutations, nonce/HMAC server identity proof,
+no token in argv or identity probe, and preservation of private config/audio. The identity endpoint
+exposes only a challenge-bound proof, no settings or library data. Bookmarks and browser history
+now intentionally retain the private URL fragment; HTTP requests do not send that fragment, and
+Referrer-Policy remains no-referrer. The README explains keeping the bookmark private and that
+bookmarks cannot start a stopped server. No private URLs, keys or workspace data are committed.

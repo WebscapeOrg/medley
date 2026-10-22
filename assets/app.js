@@ -1,7 +1,7 @@
 'use strict';
 const token = location.hash.slice(1) || sessionStorage.getItem('medley-token') || '';
 sessionStorage.setItem('medley-token', token);
-history.replaceState(null, '', '/');
+history.replaceState(null, '', token ? '/#' + encodeURIComponent(token) : '/');
 const $ = id => document.getElementById(id);
 let model, savedRules;
 async function request(path, data) {

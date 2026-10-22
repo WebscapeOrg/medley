@@ -14,6 +14,13 @@ assert.equal((await page.request.post(base+'/rename',{data:{id:'anything',name:'
 assert.equal((await page.request.post(base+'/rule',{data:{workspace:'w1',status:'done',choice:'none'}})).status(),403);
 await page.addInitScript(()=>{window.showOpenFilePicker=undefined;});
 await page.goto(base+'/#'+token);await page.locator('#status-done').waitFor();assert.equal(await page.locator('#feedback').isVisible(),false);
+assert.equal(page.url(),base+'/#'+token);
+const bookmarkContext=await browser.newContext();
+const bookmarked=await bookmarkContext.newPage();
+await bookmarked.goto(page.url());
+await bookmarked.locator('#status-done').waitFor();
+assert.equal(await bookmarked.locator('#error').isVisible(),false);
+await bookmarkContext.close();
 assert.equal(await page.locator('.rule').count(),5);
 assert.equal(await page.locator('#manage-library').count(),0);
 assert.equal(await page.getByRole('heading',{name:'Settings',exact:true}).count(),0);

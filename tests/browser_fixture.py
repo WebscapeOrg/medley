@@ -17,4 +17,4 @@ with tempfile.TemporaryDirectory() as directory:
         {'workspace_id': 'w2', 'label': 'Research', 'agent_status': 'working'},
     ]
     core.uninstall = lambda: core.update(lambda data: data.update(enabled=False))
-    serve(False)
+    serve(False, port=0)

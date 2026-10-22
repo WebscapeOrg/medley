@@ -28,7 +28,7 @@ class RelaunchTests(unittest.TestCase):
             environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=directory,
                                HERDR_CONFIG_PATH=str(config), HERDR_BIN_PATH=str(fake_herdr))
             environment.pop('MEDLEY_RELAUNCH_TOKEN', None)
-            process = subprocess.Popen([sys.executable, str(core.ROOT / 'medley.py'), 'settings', '--no-browser'],
+            process = subprocess.Popen([sys.executable, str(core.ROOT / 'medley.py'), 'settings', '--no-browser', '--port', '0'],
                                        env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             lines = queue.Queue()
             def collect():
