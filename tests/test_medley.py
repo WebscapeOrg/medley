@@ -169,3 +169,64 @@ class MedleyTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MuteTests(MedleyTests):
+    def test_mute_silences_every_sound_until_it_runs_out(self):
+        record = core.mute(1800, now=1000)
+        self.assertEqual(record, {'since': 1000, 'until': 2800})
+        self.assertEqual(core.muted(now=2000), record)
+        self.assertIsNone(core.muted(now=2801))
+        self.assertFalse((core.config_dir() / 'mute.json').exists())
+
+    def test_mute_until_unmuted_and_unmute(self):
+        record = core.mute(0, now=1000)
+        self.assertIsNone(record['until'])
+        self.assertEqual(core.muted(now=10 ** 9), record)
+        core.unmute()
+        self.assertIsNone(core.muted())
+        core.unmute()
+
+    def test_mute_lengths_are_bounded(self):
+        for seconds in (-1, 30, 25 * 3600, 'soon', None, True):
+            with self.assertRaises(ValueError):
+                core.mute(seconds)
+
+    def test_a_muted_event_still_tracks_status_but_plays_nothing(self):
+        core.update(lambda data: data.update(enabled=True))
+        core.mute(600)
+        rows = [{'workspace_id': 'w1', 'agent_status': 'working'}]
+        with patch.object(core, 'workspaces', return_value=rows), patch.object(core, 'play') as play:
+            core.event({'workspace_id': 'w1'})
+            rows[0]['agent_status'] = 'done'
+            core.event({'workspace_id': 'w1'})
+            play.assert_not_called()
+            core.unmute()
+            rows[0]['agent_status'] = 'idle'
+            core.event({'workspace_id': 'w1'})
+            play.assert_called_once()
+
+    def test_the_status_summary_reads_as_a_switch(self):
+        from medley import app
+        self.assertEqual(app.mute_summary()['on'], False)
+        self.assertIn('disabled', app.mute_summary()['summary'])
+        core.update(lambda data: data.update(enabled=True))
+        self.assertEqual(app.mute_summary(), {'id': 'medley-sounds', 'on': True, 'summary': 'Workspace sounds play.',
+                                              'enabled': True, 'mute': None})
+        core.mute(0)
+        self.assertEqual(app.mute_summary()['summary'], 'Muted until unmuted.')
+        core.mute(3600, now=0)
+        summary = app.mute_summary(now=10)
+        self.assertFalse(summary['on'])
+        self.assertTrue(summary['summary'].startswith('Muted until '))
+
+    def test_mute_lengths_on_the_command_line(self):
+        from medley import app
+        self.assertEqual(app.mute_length('45m'), 2700)
+        self.assertEqual(app.mute_length('1h'), 3600)
+        self.assertEqual(app.mute_length('1h30'), 5400)
+        self.assertEqual(app.mute_length('90'), 5400)
+        self.assertEqual(app.mute_length('0'), 0)
+        for text in ('', 'soon', 'h', '1x'):
+            with self.assertRaises(ValueError):
+                app.mute_length(text)

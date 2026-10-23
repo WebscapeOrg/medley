@@ -15,6 +15,16 @@ on = "pane.agent_status_changed"
 command = ["python3", "medley.py", "event"]
 
 [[actions]]
+id = "mute"
+title = "Mute Medley sounds for an hour"
+command = ["python3", "medley.py", "mute"]
+
+[[actions]]
+id = "unmute"
+title = "Unmute Medley sounds"
+command = ["python3", "medley.py", "unmute"]
+
+[[actions]]
 id = "uninstall"
 title = "Uninstall Medley and restore sound"
 command = ["python3", "medley.py", "uninstall"]

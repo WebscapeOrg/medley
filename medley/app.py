@@ -97,7 +97,8 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                     self.reply(404, {'error': 'Not found'})
                     return
                 self.reply(200, {'settings': core.settings(), 'audio': core.library(),
-                                 'workspaces': core.workspaces(), 'statuses': core.STATUSES})
+                                 'workspaces': core.workspaces(), 'statuses': core.STATUSES,
+                                 'mute': core.muted()})
             except Exception as error:
                 self.reply(503, {'error': str(error)})
 
@@ -153,6 +154,13 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                     else:
                         self.reply(200, path.read_bytes(), 'audio/mpeg')
                     return
+                elif self.path == '/mute':
+                    minutes = data.get('minutes')
+                    if not isinstance(minutes, (int, float)) or isinstance(minutes, bool):
+                        raise ValueError('Choose how long to mute for.')
+                    core.mute(minutes * 60)
+                elif self.path == '/unmute':
+                    core.unmute()
                 elif self.path == '/enabled':
                     if not isinstance(data.get('enabled'), bool):
                         raise ValueError('Choose whether to enable Medley')
@@ -197,17 +205,61 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                                  'settings', '--no-browser', '--port', str(server.server_port)], environment)
 
 
+def mute_length(text):
+    """Seconds from '45m', '1h', '1h30', '90' (minutes) or '0' (until unmuted)."""
+    import re
+    match = re.fullmatch(r'\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*m?)?\s*', text or '')
+    if not match or not (match.group(1) or match.group(2)):
+        raise ValueError('Give the mute length as 45m, 1h, 1h30 or 0 for until unmuted.')
+    return int(match.group(1) or 0) * 3600 + int(match.group(2) or 0) * 60
+
+
+def mute_summary(now=None):
+    """What `status` and the Caboodle switch say: on means sounds play."""
+    import time
+    data = core.settings()
+    record = core.muted(now)
+    if not data.get('enabled'):
+        on, summary = False, 'Medley is disabled, so herdr plays its own sounds.'
+    elif record and record.get('until'):
+        on = False
+        summary = 'Muted until ' + time.strftime('%H:%M', time.localtime(record['until'])) + '.'
+    elif record:
+        on, summary = False, 'Muted until unmuted.'
+    else:
+        on, summary = True, 'Workspace sounds play.'
+    return {'id': 'medley-sounds', 'on': on, 'summary': summary, 'enabled': bool(data.get('enabled')), 'mute': record}
+
+
 def main():
     parser = argparse.ArgumentParser(description='Medley — workspace sounds for herdr')
-    parser.add_argument('command', choices=['settings', 'event', 'enable', 'disable', 'uninstall', 'import'])
+    parser.add_argument('command', choices=['settings', 'event', 'enable', 'disable', 'uninstall', 'import',
+                                            'mute', 'unmute', 'status'])
     parser.add_argument('path', nargs='?')
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--port', type=int, default=DEFAULT_PORT,
                         help=f'Settings port (default: {DEFAULT_PORT}; 0 chooses a temporary port)')
+    parser.add_argument('--for', dest='length', metavar='LENGTH',
+                        help='mute: how long, as 45m, 1h or 1h30 (default 1h); 0 means until unmuted')
+    parser.add_argument('--toggle', action='store_true', help='mute: unmute instead when already muted')
+    parser.add_argument('--json', action='store_true', help='status: machine-readable')
     args = parser.parse_args()
     try:
         if args.command == 'settings':
             serve(not args.no_browser, args.port)
+        elif args.command == 'mute':
+            if args.toggle and core.muted():
+                core.unmute()
+                print('Medley: unmuted; workspace sounds play again.')
+            else:
+                core.mute(mute_length(args.length) if args.length is not None else core.MUTE_DEFAULT_SECONDS)
+                print('Medley:', mute_summary()['summary'])
+        elif args.command == 'unmute':
+            core.unmute()
+            print('Medley: unmuted; workspace sounds play again.')
+        elif args.command == 'status':
+            summary = mute_summary()
+            print(json.dumps(summary) if args.json else 'Medley: ' + summary['summary'])
         elif args.command == 'event':
             core.event(json.loads(os.environ.get('HERDR_PLUGIN_EVENT_JSON', '{}')))
         elif args.command == 'enable':
