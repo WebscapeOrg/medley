@@ -64,6 +64,42 @@ def update(change):
     return data
 
 
+MUTE_DEFAULT_SECONDS = 60 * 60
+
+
+def mute(seconds=MUTE_DEFAULT_SECONDS, now=None):
+    """Silence every workspace sound for `seconds` (0: until unmuted). Returns the mute record."""
+    now = now or time.time()
+    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or seconds < 0 or seconds > 24 * 3600:
+        raise ValueError('Choose a mute length between 1 minute and 24 hours, or 0 for until unmuted.')
+    if 0 < seconds < 60:
+        raise ValueError('Choose a mute length between 1 minute and 24 hours, or 0 for until unmuted.')
+    record = {'since': int(now), 'until': int(now + seconds) if seconds else None}
+    with locked(config_dir()):
+        write_json(config_dir() / 'mute.json', record)
+    return record
+
+
+def unmute():
+    with locked(config_dir()):
+        (config_dir() / 'mute.json').unlink(missing_ok=True)
+
+
+def muted(now=None):
+    """The mute record while it is in force, else None; a mute that has run out is forgotten."""
+    now = now or time.time()
+    record = read_json(config_dir() / 'mute.json', None)
+    if not isinstance(record, dict):
+        return None
+    until = record.get('until')
+    if until is None:
+        return record
+    if isinstance(until, (int, float)) and until > now:
+        return record
+    unmute()
+    return None
+
+
 def workspaces():
     result = subprocess.run([os.environ.get('HERDR_BIN_PATH', 'herdr'), 'workspace', 'list'],
                             capture_output=True, text=True, timeout=8, check=True)
@@ -245,6 +281,8 @@ def event(payload):
         write_json(state_dir() / 'statuses.json', cache)
         if previous is None or previous == status:
             return
+    if muted():
+        return
     play(resolve(data, workspace, status))
 
 

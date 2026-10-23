@@ -126,11 +126,29 @@ async function load() {
   model = await request('/api');
   $('enabled').checked = model.settings.enabled;
   $('enabled-label').textContent = model.settings.enabled ? 'Enabled' : 'Disabled';
+  drawMute();
   $('workspace').replaceChildren(...model.workspaces.map(w => option(w.workspace_id,w.label || w.workspace_id)));
   if (model.workspaces.some(w => w.workspace_id === selected)) $('workspace').value = selected;
   drawRules();
   drawLibrary();
 }
+function muteText(record) {
+  if (!record) return '';
+  if (!record.until) return 'Muted until unmuted.';
+  return 'Muted until ' + new Date(record.until * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '.';
+}
+function drawMute() {
+  const muted = Boolean(model.mute);
+  $('mute').textContent = muted ? 'Unmute' : 'Mute';
+  $('mute').setAttribute('aria-label', muted ? 'Unmute workspace sounds' : 'Mute workspace sounds');
+  $('mute-length').hidden = muted; document.querySelector('.mute-label').hidden = muted;
+  $('mute-status').textContent = muteText(model.mute); $('mute-status').hidden = !muted;
+}
+$('mute').onclick = () => run('', async () => {
+  if (model.mute) {await request('/unmute', {}); await load(); return 'Unmuted. Workspace sounds play again.';}
+  await request('/mute', {minutes: Number($('mute-length').value)}); await load();
+  return muteText(model.mute) + ' Every workspace sound is quiet until then.';
+});
 $('workspace').onchange = drawRules;
 $('refresh').onclick = () => run('Workspaces refreshed.',load);
 $('enabled').onchange = () => run('Playback setting saved.',async () => {await request('/enabled',{enabled:$('enabled').checked});await load();});

@@ -41,6 +41,22 @@ Default follows herdr's configured `done_path` / `request_path`, then `path`. If
 
 The **My Sounds** library stays visible, beside **My Workspaces** on wide screens (and below it on narrow screens). Use the list to preview any sound in the browser, rename it with Save/Cancel, or remove it. Renaming updates the display name everywhere while keeping audio and assignments intact. The import picker starts in Downloads in browsers supporting the File System Access picker (including desktop Chromium); other browsers use their normal file picker. Removal asks for confirmation and resets every workspace/status using that sound to Default. It removes only Medley’s imported copy, not the original file.
 
+## Mute for a while
+
+For a video call or a quiet hour, mute every workspace sound at once; your choices stay as they are.
+
+- In settings, choose a length (30 minutes, 1 hour, 2 hours, or until unmuted) and press **Mute**. The
+  button becomes **Unmute** and shows when the sounds come back.
+- From herdr's command palette: `herdr plugin action invoke medley.mute` mutes for an hour and
+  `medley.unmute` ends it early.
+- From a shell: `python3 medley.py mute` (an hour), `mute --for 45m`, `mute --for 1h30`, `mute --for 0`
+  (until unmuted), `mute --toggle` (unmute when already muted, for a key binding), `unmute`, and
+  `status` (`--json` prints `{"id", "on", "summary"}`, where `on` means sounds play).
+
+A mute runs out by itself, so a forgotten one cannot keep the sounds off for days. Status changes
+during a mute are still tracked, so nothing plays late when it ends. The record is `mute.json` in
+Medley's config directory.
+
 ## Where audio plays
 
 Plugin hooks run on the **herdr server machine**, so audio plays there, including for the currently focused workspace. This release does not route sound to remote clients or mirror herdr's focused-tab suppression. It is suitable for a local desktop server; do not enable it on a remote server expecting your laptop to play audio. Playback is bounded to 30 seconds per clip; overlapping notifications are dropped while a clip is playing. Very long MP3s may be interrupted.
