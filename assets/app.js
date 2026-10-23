@@ -7,7 +7,7 @@ let model, savedRules;
 async function request(path, data) {
   const response = await fetch(path, {method: data === undefined ? 'GET' : 'POST', headers: {'X-Medley-Token': token, 'Content-Type': 'application/json'}, body: data === undefined ? undefined : JSON.stringify(data)});
   const result = await response.json();
-  if (response.status === 404) throw new Error('This settings tab uses an older Medley server. Reopen Medley with herdr plugin action invoke medley.settings and use the new tab.');
+  if (response.status === 404) throw new Error('This settings tab talks to an older Medley server that lacks this action. Press Relaunch to restart it on the installed version, then try again.');
   if (!response.ok) throw new Error(result.error || 'The request failed. Try again.');
   return result;
 }
