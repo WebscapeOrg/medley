@@ -127,6 +127,8 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                     core.remove_audio(data['id'])
                 elif self.path == '/rule':
                     core.set_rule(data['workspace'], data['status'], data['choice'])
+                elif self.path == '/status-mute':
+                    core.set_status_mute(data['workspace'], data['status'], data['muted'])
                 elif self.path == '/reset':
                     core.update(lambda settings: settings.update(rules={}))
                 elif self.path == '/restore':
