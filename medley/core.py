@@ -213,12 +213,34 @@ def set_rule(workspace, status, choice):
     return update(change)
 
 
+def set_status_mute(workspace, status, muted):
+    if not isinstance(workspace, str) or not workspace or len(workspace) > 200:
+        raise ValueError('Choose a valid workspace.')
+    if status not in (*STATUSES, 'all') or not isinstance(muted, bool):
+        raise ValueError('Choose a valid status and whether to mute it.')
+    def change(data):
+        mutes = data.setdefault('mutes', {})
+        statuses = set(mutes.get(workspace, []))
+        affected = STATUSES if status == 'all' else (status,)
+        if muted:
+            statuses.update(affected)
+        else:
+            statuses.difference_update(affected)
+        if statuses:
+            mutes[workspace] = [value for value in STATUSES if value in statuses]
+        else:
+            mutes.pop(workspace, None)
+    return update(change)
+
+
 def herdr_config():
     path = Path(os.environ.get('HERDR_CONFIG_PATH', Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'herdr/config.toml'))
     return path, tomllib.loads(path.read_text())
 
 
 def resolve(data, workspace, status):
+    if status in data.get('mutes', {}).get(workspace, []):
+        return None
     choice = data.get('rules', {}).get(workspace, {}).get(status, 'default')
     if choice == 'none':
         return None
@@ -283,7 +305,7 @@ def event(payload):
             return
     if muted():
         return
-    play(resolve(data, workspace, status))
+    play(resolve(settings(), workspace, status))
 
 
 def activate(enabled):

@@ -21,7 +21,7 @@ class RelaunchTests(unittest.TestCase):
             fake_herdr.write_text('#!' + sys.executable + '\nprint(\'{"result":{"workspaces":[]}}\')\n')
             fake_herdr.chmod(0o700)
             settings = root / 'settings.json'
-            settings.write_text(json.dumps({'enabled': True, 'rules': {'example': {'done': 'none'}}}))
+            settings.write_text(json.dumps({'enabled': True, 'rules': {'example': {'done': 'none'}}, 'mutes': {'example': ['done', 'blocked']}}))
             original = settings.read_bytes()
             config = root / 'herdr.toml'
             config.write_text('[ui.sound]\nenabled=false\n')

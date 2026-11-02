@@ -81,6 +81,7 @@ assert.equal(await page.locator('#status-done option').count(),3);
 assert.equal(await page.locator('#status-done option').last().textContent(),'done');
 assert.equal(await page.locator('#import').count(),0);
 const custom=await page.locator('#status-done option').last().getAttribute('value');await page.locator('#status-done').selectOption(custom);await page.getByText('Sound saved.',{exact:true}).waitFor();
+await require('./status_mute.cjs')(page,base,token,custom);
 let releasePreview;
 const previewGate=new Promise(resolve=>{releasePreview=resolve;});
 await page.route('**/preview',async route=>{await previewGate;await route.continue();});

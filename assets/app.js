@@ -19,7 +19,7 @@ async function run(message, operation, pending = 'Saving…', recover = true) {
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
   try {const result = await operation(); $('feedback').textContent = result || message; $('feedback').hidden = !$('feedback').textContent;}
   catch (error) {if (recover) {try {await load();} catch (_) {}} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
-  finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = false); if(focusedId && $(focusedId)) $(focusedId).focus();}
+  finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = element.dataset.unavailable === 'true'); if(focusedId && $(focusedId)) $(focusedId).focus();}
 }
 function option(value, text) {const item = document.createElement('option'); item.value = value; item.textContent = text; return item;}
 function closePreview() {
@@ -45,6 +45,13 @@ function previewSound(data, row) {
 }
 function drawRules() {
   const workspace = $('workspace').value;
+  const mutedStatuses = model.settings.mutes?.[workspace] || [];
+  const allMuted = model.statuses.every(status => mutedStatuses.includes(status));
+  $('workspace-mute').textContent = allMuted ? 'Unmute all' : 'Mute all';
+  $('workspace-mute').setAttribute('aria-label', (allMuted ? 'Unmute' : 'Mute') + ' all statuses in this workspace');
+  $('workspace-mute').disabled = !workspace;
+  $('workspace-mute').dataset.unavailable = String(!workspace);
+  $('workspace-mute').onclick = () => changeStatusMute(workspace, 'all', !allMuted);
   if ($('rules').contains($('preview-row'))) closePreview();
   $('rules').replaceChildren();
   if (!workspace) {$('rules').textContent = 'No workspaces found. Open a herdr workspace, then refresh.'; return;}
@@ -54,14 +61,35 @@ function drawRules() {
     label.textContent = ({idle:'Idle',working:'Working',blocked:'Needs attention',done:'Done',unknown:'Unknown'})[status];
     const select = document.createElement('select'); select.id = label.htmlFor;
     select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.slice().sort((a,b) => a.name.replace(/\.mp3$/i,'').localeCompare(b.name.replace(/\.mp3$/i,''),undefined,{sensitivity:'base',numeric:true})).map(audio => option(audio.id,audio.name.replace(/\.mp3$/i,''))));
-    select.value = model.settings.rules[workspace]?.[status] || 'default';
+    const choice = model.settings.rules[workspace]?.[status] || 'default';
+    select.value = choice;
+    if (select.selectedIndex < 0) {select.append(option(choice, 'Missing sound')); select.value = choice;}
+    const muted = mutedStatuses.includes(status);
+    const savedSound = select.selectedOptions[0].textContent;
+    if (muted) select.value = 'none';
+    select.disabled = muted;
+    select.dataset.unavailable = String(muted);
+    select.title = muted ? 'Muted. Unmute to restore “' + savedSound + '”.' : '';
     select.onchange = () => run('Sound saved.', async () => {await request('/rule',{workspace,status,choice:select.value}); await load();});
+    const mute = document.createElement('button'); mute.id = 'mute-' + status;
+    mute.textContent = muted ? 'Unmute' : 'Mute';
+    mute.setAttribute('aria-label', mute.textContent + ' ' + label.textContent + ' sound');
+    mute.onclick = () => changeStatusMute(workspace, status, !muted);
     const preview = document.createElement('button'); preview.textContent = 'Preview'; preview.setAttribute('aria-label','Preview ' + label.textContent + ' sound');
     preview.onclick = () => previewSound({workspace,status}, row);
     const reset = document.createElement('button'); reset.textContent = 'Reset'; reset.setAttribute('aria-label','Reset ' + label.textContent + ' to default');
     reset.onclick = () => run('Sound reset to default.',async () => {await request('/rule',{workspace,status,choice:'default'});await load();});
-    row.append(label,select,preview,reset); $('rules').append(row);
+    const actions = document.createElement('div'); actions.className = 'rule-actions';
+    actions.append(mute,preview,reset);
+    row.append(label,select,actions); $('rules').append(row);
   }
+}
+function changeStatusMute(workspace, status, muted) {
+  const message = muted ? 'Muted. Saved sound choices are kept.' : 'Unmuted. Saved sound choices restored.';
+  return run(message, async () => {
+    await request('/status-mute', {workspace, status, muted});
+    await load();
+  });
 }
 function drawLibrary() {
   document.querySelector('.workspace-sounds-layout').style.setProperty('--panel-rows',Math.max(6,model.audio.length) + 1);

@@ -697,3 +697,158 @@ exposes only a challenge-bound proof, no settings or library data. Bookmarks and
 now intentionally retain the private URL fragment; HTTP requests do not send that fragment, and
 Referrer-Policy remains no-referrer. The README explains keeping the bookmark private and that
 bookmarks cannot start a stopped server. No private URLs, keys or workspace data are committed.
+
+## Workspace and status mute — 2026-11-02
+
+Each status has Mute/Unmute; the workspace has Mute all/Unmute all. Mutes are
+stored separately from sound rules. Muted selectors display quiet, and unmute
+restores the saved selection. Workspace mute applies all five status flags;
+individual unmute is supported. Global timed mute stays separate. Reset and
+removal update the saved rule without clearing a mute.
+
+Validation: 52 Python tests passed, including seven new scoped-mute cases and
+actual settings-process relaunch preserving mute data. The Chromium suite passed
+with real isolated HTTP requests for persistence, custom/default/None restoration,
+workspace isolation, mixed mutes, keyboard activation/focus, delayed requests,
+failure/retry, quiet previews, reset/undo, missing sounds, empty workspaces,
+unauthenticated rejection and existing library/relaunch flows. Tests use synthetic
+workspaces and private temporary settings. No actual speaker output was tested.
+
+Independent hostile review found two defects before shipment: a missing saved
+sound could stop row rendering, and 200% text could squeeze selectors despite no
+page overflow. Missing sounds now have a selectable placeholder so recovery
+controls remain available. Text-relative container queries move actions below the
+selector; regression checks require at least 320px selector width at enlarged text
+on 1500/1600px viewports. The independent verifier confirmed both fixes and passed 45 width/text-size combinations. Other layout checks cover 320, 390, 640, 768, 834, 900,
+1280 and 1600px, with shared row alignment at 1200/1280/1600px and 125% text.
+
+### Block map and rendered review
+
+The header, workspace settings and sound library are **bespoke**: this existing
+standard-library app uses native controls and CSS grids, with no Tailwind Plus
+installation. Retaining that system avoids introducing a different component kit
+for six buttons. The structural contract is shared desktop row tracks across the
+two panels, stable label/select alignment, and wrapped action groups on narrow
+screens. Automated geometry checks retain the shared rows, enforce 12px control
+separation and prevent overflow. Desktop and phone light/dark screenshots were
+inspected: [desktop](mute-desktop.png), [desktop dark](mute-desktop-dark.png),
+[phone](mute-mobile.png), [phone dark](mute-dark.png).
+
+First impression: My eye goes to Medley at the top left, then My Workspaces and its
+workspace selector, then the row controls. The hierarchy keeps the workspace and
+sound choices prominent. The new action occupies the same group as Preview and
+Reset. My one-word impression is orderly.
+
+### Input and interaction checks
+
+| Check | Inspected, finding, action and result |
+|---|---|
+| Error prevention | Status and boolean inputs validated before writing; invalid and unauthenticated requests fail without changing rules. Empty workspace disables Mute all. Passed. |
+| Error recovery | Injected save failure retains mute and saved sound, exposes retry text, and enables the toggle again. Retry succeeds. |
+| Standard controls and labels | Native buttons/selects, status-specific accessible names, stable button IDs and existing focus outline. Enter/Space and focus restoration pass. |
+| Action conventions | Mute and Unmute name the next action. No confirmation for a reversible operation. Existing destructive action stays separate. |
+| Reuse known information | Selected workspace and saved audio choices supply the request; no repeated input. Passed. |
+| Reset/Clear | Existing requested resets retained. Tests verify reset/undo preserve mute flags and restore sound choices. No new destructive control. |
+| Password inspection | No password input; generated private access key unchanged. Not applicable. |
+| Selection semantics | Sound choice remains a native select; mute is a reversible action button with a changing label. No redundant pressed-state label. Passed. |
+
+### Control and feedback checks
+
+| Check | Inspected, finding, action and result |
+|---|---|
+| System status | Saving feedback appears immediately; muted rows show quiet and Unmute. Verified with a held HTTP request. |
+| Control and freedom | Unmute reverses one mute; Unmute all reverses all five. Individual exceptions after Mute all work. Passed. |
+| Error prevention | Controls disable during requests; saved selections remain separately stored. Repeated desired-state writes are idempotent. Passed. |
+| Error diagnosis | Failure alert preserves current server state; retry works. Missing saved sound now renders instead of crashing. |
+| Recovery cost | No imported audio or saved rules are replaced by mute. Default, custom and explicit quiet restore correctly. Passed. |
+| Response thresholds | Pending feedback precedes network work. No silent wait was observed in delayed-request test. No timing claim made. |
+| Longer operations | Mute adds one small settings write and reload; disabled controls prevent double submission. Existing relaunch polling remains bounded. |
+| Browser navigation | Same page and private bookmark retained; reload restores mutes and choices. No new routing or history entries. |
+
+### Aesthetic and clarity checks
+
+| Check | Inspected, finding, action and result |
+|---|---|
+| Minimalism | Added only the requested row and workspace controls; used existing help popover for explanations. No new card or icon. |
+| Affordances | Visible Mute/Unmute text on native buttons. Controls remain recognizable in both themes. |
+| Motion and ad-like content | No animation or promotional decoration added. Reduced-motion browser case passes. |
+| Scannability | Existing status order, typography and dividers preserved; action groups align and wrap with clear gaps. |
+| Text size and legibility | Fixed enlarged-text selector compression. Muted text contrast is 5.55:1 light and 6.48:1 dark; enlargement checks pass. |
+| Accessible task completion | Keyboard mute/unmute and focus retention pass; DOM names distinguish each status. Actual screen-reader speech and OS magnifier operation were not tested. |
+
+### Usable and predictable checks
+
+| Check | Inspected, finding, action and result |
+|---|---|
+| Real-world language | Uses the requested Mute, Unmute and quiet wording; no storage terms appear in controls. |
+| Consistency | Reuses existing native button style and timed-mute vocabulary. Global timer and selected-workspace scope stay distinct. |
+| Recognition | Current workspace, quiet state and reversal action stay visible; saved choice is retained in the muted selector's tooltip. |
+| Expert efficiency | Mute all handles five statuses in one action; keyboard access remains native. |
+| Learnability | Buttons sit beside the affected row or workspace; help explains restoration. No gesture or separate screen needed. |
+| Repeat efficiency | One click each way, no confirmation or reselecting audio. Browser flow passes. |
+| Memorability | Existing screen structure, status order and Preview/Reset wording retained. |
+| Error severity/recovery | Reversible mute and isolated flags prevent accidental sound-choice loss. Tests cover restoration. |
+| Satisfaction/control | Pending, success and failure feedback remain available; toggle always offers reversal after completion. |
+| Utility and usability | Implements both requested scopes, tested through the UI and playback resolver. |
+| Familiar conventions | Native select and named action buttons; no custom input model. |
+| Mental model | Mute temporarily replaces playback with quiet; unmute restores the saved sound. Mute all/Unmute all act on all five statuses. |
+
+### Reading and understanding checks
+
+| Check | Inspected, finding, action and result |
+|---|---|
+| Help/documentation | Existing workspace help and README explain scopes, persistence, saved choices, reset/removal and the separate timed mute. |
+| Specific labels | Mute/Unmute and Mute all/Unmute all describe their action; repeated buttons have status names for assistive technology. |
+| Concision | Short action labels and one-line feedback; explanations stay in help. |
+| Scannability | Existing headings and five short rows retained; no new long on-screen text block. |
+| Important information first | Success says Muted or Unmuted before explaining saved choices. |
+| Plain language | Reviewed new copy; no implementation vocabulary or promotional wording. |
+| Numerals | No new displayed numeric quantities; existing timer values retained. |
+| PDF avoidance | Help remains in the page and repository Markdown; no PDF added. |
+| Text enlargement | Inherited relative body/control fonts retained; selectors stay readable with 200% root text. |
+
+### Visual polish checks
+
+| Check | Inspected, finding, action and result |
+|---|---|
+| Spacing | Existing 12px action gaps, panel padding and section spacing retained. Geometry checks enforce control separation. |
+| Alignment | Shared desktop row boundaries and label/select columns tested; actions wrap below at narrow effective widths. |
+| Breathing room | Inspected desktop/phone images and control bounds; no touching buttons or inputs. |
+| Section padding | Same existing panel padding; no composed vendored blocks or new section rhythm. |
+| Vertical rhythm | Existing 16px rows and 20/24px section spacing retained. No new arbitrary row margins. |
+| Type hierarchy | Measured one system font, 48px h1 and 22px h2. Existing title/section/body hierarchy retained. |
+| Line length/height | Short labels and feedback use inherited 1.6 line height; no new long prose in the main flow. |
+| Type scale | No new text sizes. Existing 22px heading and 17px body are intentional inherited styling, outside this control addition. |
+| Weight | Labels remain semibold; action text regular. No new emphasis styles. |
+| Typographic details | Feedback uses existing ellipsis; saved-sound tooltip uses typographic quotation marks. No numerical table added. |
+| Truncation | Fixed enlarged selectors. Long library-label wrapping remains covered by existing browser tests. |
+| Palette | No new color; muted selectors reuse the existing muted text color. |
+| Contrast | Computed muted-text ratios pass 4.5:1 in both themes: 5.55 and 6.48. |
+| Color meaning | No status conveyed by color alone; Unmute text identifies muted rows. |
+| Dark mode | Inspected phone and desktop dark images; controls, text and separators visible. |
+| Status colors | Existing neutral actions and red Uninstall retained; no new status color. |
+| Primary action | Workspace selection remains the main context; each row's controls operate that row. No competing promotional action added. |
+| Squint test | Title and workspace panel remain prominent; six requested controls have normal action weight. |
+| Grouping | Mute, Preview and Reset are one action group per status; workspace mute sits with its selector. |
+| Negative space | Existing margins and panel gutters retained; narrow rows grow rather than crowding. |
+| Components | Reuses button/select styling, with a stable minimum Mute/Unmute width to avoid label jitter. |
+| Icons | No icon added; existing labeled information controls unchanged. |
+| Radius/shadow | Existing radius and shadow treatment retained; no new visual family. |
+| Kits | No new toolkit or vendored block introduced. |
+| Hover/focus/active | Existing hover border and visible focus outline retained; keyboard activation verified. Native action buttons do not need a persistent pressed style. |
+| Motion | No transition or continuous animation added; reduced motion tested. |
+| Loading/empty/error/disabled | Delayed request, error/retry and no-workspace cases exercised. Muted selectors remain disabled after unrelated operations. |
+| Mobile navigation | Single-page settings has no new navigation. Header controls continue to wrap. |
+| Tables/rows | Rows fit phone, tablet and desktop; panels retain shared desktop row heights. |
+| Touch targets | New buttons measured at least 44px high and 87px wide; row buttons 96×44 for Mute/Unmute. Existing small info buttons/switch were not redesigned in this scoped change. |
+| Tablet | 768/834/900px widths pass geometry and overflow checks. |
+
+Blacklist inspection: no gradients, feature grids, centered page copy, new bubbly
+radius, decorative filler, emoji decoration, colored left-border cards, generic
+hero copy or repeated marketing sections were introduced. The existing plain
+settings form remains the appropriate structure.
+
+Security review: new mutation uses the existing loopback/token boundary and locked
+atomic writer. No external URL, shell execution or credential change was added.
+Saved sound names are inserted with textContent. Full unrelated security and
+accessibility audits were not performed.
