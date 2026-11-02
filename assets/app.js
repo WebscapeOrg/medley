@@ -3,7 +3,8 @@ const token = location.hash.slice(1) || sessionStorage.getItem('medley-token') |
 sessionStorage.setItem('medley-token', token);
 history.replaceState(null, '', token ? '/#' + encodeURIComponent(token) : '/');
 const $ = id => document.getElementById(id);
-let model, savedRules;
+let model, savedRules, muteTimer;
+let operationPending = false;
 async function request(path, data) {
   const response = await fetch(path, {method: data === undefined ? 'GET' : 'POST', headers: {'X-Medley-Token': token, 'Content-Type': 'application/json'}, body: data === undefined ? undefined : JSON.stringify(data)});
   const result = await response.json();
@@ -13,13 +14,18 @@ async function request(path, data) {
 }
 async function run(message, operation, pending = 'Saving…', recover = true) {
   const focusedId = document.activeElement.id;
+  operationPending = true;
   $('error').hidden = true;
   $('feedback').hidden = false;
   $('feedback').textContent = pending;
   document.querySelectorAll('button,input,select').forEach(element => element.disabled = true);
   try {const result = await operation(); $('feedback').textContent = result || message; $('feedback').hidden = !$('feedback').textContent;}
   catch (error) {if (recover) {try {await load();} catch (_) {}} $('error').textContent = error.message; $('error').hidden = false; $('feedback').textContent = 'Changes could not be completed. Try again.';}
-  finally {document.querySelectorAll('button,input,select').forEach(element => element.disabled = element.dataset.unavailable === 'true'); if(focusedId && $(focusedId)) $(focusedId).focus();}
+  finally {
+    operationPending = false;
+    document.querySelectorAll('button,input,select').forEach(element => element.disabled = element.dataset.unavailable === 'true');
+    if (focusedId && $(focusedId)) [$(focusedId), $('workspace-mute'), $('mute')].find(element => !element.disabled)?.focus();
+  }
 }
 function option(value, text) {const item = document.createElement('option'); item.value = value; item.textContent = text; return item;}
 function closePreview() {
@@ -49,12 +55,10 @@ function drawRules() {
   const allMuted = model.statuses.every(status => mutedStatuses.includes(status));
   $('workspace-mute').textContent = allMuted ? 'Unmute all' : 'Mute all';
   $('workspace-mute').setAttribute('aria-label', (allMuted ? 'Unmute' : 'Mute') + ' all statuses in this workspace');
-  $('workspace-mute').disabled = !workspace;
-  $('workspace-mute').dataset.unavailable = String(!workspace);
   $('workspace-mute').onclick = () => changeStatusMute(workspace, 'all', !allMuted);
   if ($('rules').contains($('preview-row'))) closePreview();
   $('rules').replaceChildren();
-  if (!workspace) {$('rules').textContent = 'No workspaces found. Open a herdr workspace, then refresh.'; return;}
+  if (!workspace) {$('rules').textContent = 'No workspaces found. Open a herdr workspace, then refresh.'; drawMuteAvailability(); return;}
   for (const status of model.statuses) {
     const row = document.createElement('div'); row.className = 'rule';
     const label = document.createElement('label'); label.htmlFor = 'status-' + status;
@@ -82,6 +86,23 @@ function drawRules() {
     const actions = document.createElement('div'); actions.className = 'rule-actions';
     actions.append(mute,preview,reset);
     row.append(label,select,actions); $('rules').append(row);
+  }
+  drawMuteAvailability();
+}
+function drawMuteAvailability() {
+  const workspace = $('workspace').value;
+  const globallyMuted = Boolean(model.mute);
+  const mutedStatuses = model.settings.mutes?.[workspace] || [];
+  const workspaceMuted = model.statuses.every(status => mutedStatuses.includes(status));
+  $('workspace-mute').dataset.unavailable = String(!workspace || globallyMuted);
+  $('workspace-mute').disabled = operationPending || !workspace || globallyMuted;
+  $('workspace-mute').title = globallyMuted ? 'Unmute workspace sounds first.' : '';
+  for (const status of model.statuses) {
+    const button = $('mute-' + status);
+    if (!button) continue;
+    button.dataset.unavailable = String(globallyMuted || workspaceMuted);
+    button.disabled = operationPending || globallyMuted || workspaceMuted;
+    button.title = globallyMuted ? 'Unmute workspace sounds first.' : workspaceMuted ? 'Unmute this workspace first.' : '';
   }
 }
 function changeStatusMute(workspace, status, muted) {
@@ -171,6 +192,23 @@ function drawMute() {
   $('mute').setAttribute('aria-label', muted ? 'Unmute workspace sounds' : 'Mute workspace sounds');
   $('mute-length').hidden = muted; document.querySelector('.mute-label').hidden = muted;
   $('mute-status').textContent = muteText(model.mute); $('mute-status').hidden = !muted;
+  clearTimeout(muteTimer);
+  if (model.mute?.until) {
+    const record = model.mute;
+    muteTimer = setTimeout(() => refreshMute(record), Math.max(100, record.until * 1000 - Date.now() + 100));
+  }
+}
+async function refreshMute(record) {
+  if (model.mute !== record) return;
+  try {
+    const updated = await request('/api');
+    if (model.mute !== record) return;
+    model.mute = updated.mute;
+    drawMute();
+    drawMuteAvailability();
+  } catch (_) {
+    if (model.mute === record) muteTimer = setTimeout(() => refreshMute(record), 5000);
+  }
 }
 $('mute').onclick = () => run('', async () => {
   if (model.mute) {await request('/unmute', {}); await load(); return 'Unmuted. Workspace sounds play again.';}

@@ -31,7 +31,7 @@ Keep the settings command running while editing; Ctrl+C closes the settings serv
 1. Choose an MP3 or WAV, up to 20 MB; it imports immediately without another button press. Medley validates the audio, converts WAV to MP3 locally, and copies it into its private library, so moving or deleting the original does not break playback.
 2. Choose a workspace. Each of its five statuses has a separate audio selection.
 3. Select a library file (displayed without its .mp3 extension), **None · quiet**, or **Default**. Changes save immediately.
-4. Use **Mute** beside a status to temporarily make it quiet. The button becomes **Unmute**, which restores the saved sound. **Mute all** beside the workspace selector mutes all five statuses in that workspace; **Unmute all** restores their saved choices. You can also unmute individual statuses. These mutes survive refresh and relaunch and stay on until you unmute them. A muted selector shows **None · quiet**; its saved choice is kept separately. Resetting or removing a sound changes that saved choice without clearing the mute.
+4. Use **Mute** beside a status to temporarily make it quiet. The button becomes **Unmute**, which restores the saved sound. **Mute all** beside the workspace selector mutes all five statuses in that workspace; **Unmute all** restores their saved choices. While a workspace is muted, its status mute buttons are disabled; use **Unmute all** first. These mutes survive refresh and relaunch and stay on until you unmute them. A muted selector shows **None · quiet**; its saved choice is kept separately. Resetting or removing a sound changes that saved choice without clearing the mute.
 5. Use **Preview** to play the selected sound immediately in your browser. A temporary row directly beneath the sound shows audio controls to stop or replay it. The player is right aligned; previewing another sound moves it there. Silent selections are identified as quiet; if the browser blocks playback, use Play in the controls to retry. **Reset** restores one cell; **Reset all to default** restores every workspace and offers Undo until settings closes or another reset replaces it.
 
 The statuses are Idle, Working, Needs attention (herdr's `blocked`), Done, and Unknown. Rules use herdr's workspace IDs, so renaming a workspace retains its choices. Recreating a deleted workspace or using a different herdr session does not transfer choices automatically. Keep a separate plugin config directory per independent session.
@@ -54,7 +54,7 @@ For a video call or a quiet hour, mute every workspace sound at once; your choic
   (until unmuted), `mute --toggle` (unmute when already muted, for a key binding), `unmute`, and
   `status` (`--json` prints `{"id", "on", "summary"}`, where `on` means sounds play).
 
-A timed mute runs out by itself; **until unmuted** stays on until you end it. The global mute is separate from the status and workspace buttons: ending it leaves their mutes in place. Status changes
+A timed mute runs out by itself; **until unmuted** stays on until you end it. Global mute disables the workspace and status mute buttons until it ends. The settings page checks again when a timed mute expires. Ending global mute leaves any workspace and status mutes in place. Status changes
 during a mute are still tracked, so nothing plays late when it ends. The record is `mute.json` in
 Medley's config directory.
 
