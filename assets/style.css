@@ -33,6 +33,7 @@ main{max-width:1600px}.workspace-sounds-layout{display:grid;gap:20px;align-items
 .mute-controls{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.mute-controls .mute-label{margin:0;font-weight:600}.mute-controls select{min-height:44px}#mute-status{color:var(--muted);font-weight:600}#mute-status[hidden],.mute-label[hidden],#mute-length[hidden]{display:none}
 
 .rule-actions{display:flex;flex-wrap:wrap;gap:12px}.rule-actions button:first-child{min-width:6rem}#workspace-mute{justify-self:end}select:disabled{opacity:1;cursor:default;color:var(--muted)}
+button[data-unavailable=true]:disabled{cursor:default}
 .workspace-sounds-layout{container-type:inline-size;container-name:workspace}
 @media(min-width:641px){@container workspace (max-width:43em){section[aria-labelledby=rules-heading]{grid-template-columns:150px minmax(0,1fr)}.rule-actions,#workspace-mute{grid-column:2}.rule-actions{justify-content:flex-end}}}
 @media(min-width:1200px){@container workspace (max-width:87em){section[aria-labelledby=rules-heading]{grid-template-columns:150px minmax(0,1fr)}.rule-actions,#workspace-mute{grid-column:2}.rule-actions{justify-content:flex-end}}}

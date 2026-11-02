@@ -703,7 +703,8 @@ bookmarks cannot start a stopped server. No private URLs, keys or workspace data
 Each status has Mute/Unmute; the workspace has Mute all/Unmute all. Mutes are
 stored separately from sound rules. Muted selectors display quiet, and unmute
 restores the saved selection. Workspace mute applies all five status flags;
-individual unmute is supported. Global timed mute stays separate. Reset and
+the initial individual-unmute behavior is superseded by the mute hierarchy
+follow-up below. Global timed mute stays separate. Reset and
 removal update the saved rule without clearing a mute.
 
 Validation: 52 Python tests passed, including seven new scoped-mute cases and
@@ -859,3 +860,170 @@ byte-identical committed HTML, JavaScript and CSS. A fresh browser context rende
 all five status controls and the workspace control without JavaScript errors.
 Settings, audio-library files, the private access key and herdr configuration
 remained unchanged. The original herdr process continued running.
+
+## Mute hierarchy — 2026-11-02
+
+Global mute now disables the selected workspace's mute button and all five status
+mute buttons. A workspace with all five statuses muted disables its status mute
+buttons; Unmute all remains available. Saved choices and mute records are
+unchanged by availability updates. Ending a parent mute reveals the existing
+lower state. A timed global mute refreshes availability at its deadline, without
+rebuilding rows or interrupting an editor or preview.
+
+Evidence: the new workspace guard regression failed on the original code (all
+five buttons were enabled), then passed with the change. The full Chromium suite
+passed, exit 0, with no JavaScript errors. It covers global and workspace mute,
+individual mute preservation under global mute, nested unmute, workspace changes,
+reload/Refresh, reset/undo, quiet preview, failed unmute/retry, disabled click
+suppression, keyboard tab order, and focus recovery when the final individual
+status becomes disabled. The expiry scenario uses a shortened synthetic browser
+deadline and clears the isolated server's mute, then checks that an in-flight
+preview keeps controls disabled until its request completes. Core expiry remains
+covered by Python tests. All 52 Python tests passed, exit 0.
+
+Synthetic screenshots: `mute-global.png`, `mute-workspace.png`, and
+`mute-hierarchy-mobile.png`. Desktop light and phone dark screenshots were viewed.
+The existing responsive checks also passed at 320, 390, 640, 768, 834, 900, 1280,
+and 1600px, shared desktop rows at 1200/1280/1600px, 125% text, and enlarged
+selectors at 200% text. No production sound settings were used for browser tests.
+
+### Block contract and first impression
+
+| Surface | Block map and invariant | Review result |
+| --- | --- | --- |
+| Header and global mute | Bespoke — compact native controls in an existing wrapping settings header. No vendored block changed. | Retained grouping and wrapping; the available global Unmute identifies the controlling level. |
+| My Workspaces | Bespoke — paired workspace/status and sound-library subgrids require shared row alignment. | Same label/select/actions structure; availability adds no element or grid track. Desktop shared rows and 12px control gaps pass. |
+| My Sounds | Bespoke — audio-specific preview/rename/remove rows share the workspace grid. | No structural change; library actions remain available between requests. |
+
+My eye goes first to Medley at the top left, then to the global controls at the top
+right, then to My Workspaces. The disabled lower mute buttons are visibly dimmer
+than Preview and Reset. In the workspace screenshot, Unmute all is the available
+mute action beside the workspace. My first impression is a plain settings form
+with a clear controlling action. The phone image keeps each group separated;
+buttons do not touch their neighbours. No new page, card, banner or icon is needed.
+
+### Input and interaction
+
+| Check | Inspected, finding, action and result |
+| --- | --- |
+| Error prevention | Lower buttons previously stayed actionable under a parent mute. Added native disabled states; disabled clicks issue no status-mute request. |
+| Error recognition/recovery | Simulated failed global unmute. Error remains visible, saved state stays muted, lower buttons stay disabled, parent Unmute supports retry. |
+| Standard controls/labels | Existing native buttons and status-specific accessible names retained. Titles explain which parent to unmute. Tab skips disabled buttons. |
+| Action conventions | Existing Mute/Unmute labels and button positions retained; no confirmation or destructive default added. |
+| Reuse known data | Availability derives from the existing global mute and selected workspace's five status mutes; no new persisted preference. |
+| Reset/Clear safety | No reset control added. Existing reset/undo exercised under global mute; saved rules restore and mute availability stays correct. |
+| Password inspection | No password entry exists; the bookmark token and its handling are unchanged. No new password control needed. |
+| Selection semantics | Action buttons remain native; workspace selection remains a select. No checkbox/radio/dropdown added for the binary action. |
+
+### Control and feedback
+
+| Check | Inspected, finding, action and result |
+| --- | --- |
+| Visible status | Existing global mute text and action feedback retained. Disabled buttons now reflect the controlling mute immediately after load. |
+| Control/freedom | Parent Unmute stays available; workspace Unmute all stays available when global mute is off. One action restores the lower controls. |
+| Error prevention | Availability survives request cleanup; unrelated Preview, Refresh, Reset and Undo cannot re-enable blocked buttons. |
+| Error diagnosis/recovery | Failed unmute preserves the controlling mute and provides retry. Background expiry reads retry after five seconds if unavailable. |
+| Error severity/recovery cost | Saved sound rules and individual status mute are compared before/after global mute. No extra mutation or data-loss path added. |
+| Response thresholds | Native disabled states change synchronously; existing Saving/Loading feedback covers requests. Expiry updates only the mute state and controls. |
+| Progress/duplicate prevention | Held preview request verifies expiry cannot enable controls during a pending action. Persistent disabled states use a default cursor, rather than looking like an ongoing save. |
+| Browser Back/navigation | No route/history change; bookmark and fresh-context browser checks still pass. |
+
+### Aesthetic and clarity
+
+| Check | Inspected, finding, action and result |
+| --- | --- |
+| Minimalism/structure | Considered extra banners and rows; existing parent button and disabled children express the requested hierarchy. Added only help/tooltip explanation. |
+| Controls and icons | Text buttons remain recognizable; no new icon or custom control. |
+| Motion/ad-like content | No animation, autoplay or promotional content added. Existing reduced-motion checks pass. |
+| Scannability | Parent and child controls remain in their existing positions, with ordinary action labels and clear row separation. |
+| Text size/contrast | No font/color change. Existing text enlargement checks pass; muted selector text measures 5.55:1 light and 6.48:1 dark. Inactive buttons use existing disabled opacity. |
+| Accessible task completion | Keyboard can unmute the parent and then operate the status. Muting all statuses individually moves focus to Unmute all when the final row button becomes disabled. Browser semantics and focus were checked; actual screen-reader speech and OS magnification were not tested. |
+
+### Usable and predictable
+
+| Check | Inspected, finding, action and result |
+| --- | --- |
+| Real-world language | Uses the user's global/workspace/status hierarchy and existing Mute/Unmute wording. |
+| Consistency/standards | Reuses native disabled controls and the existing availability contract; sibling Caboodle's Boost controller also uses disabled buttons and an available-button focus fallback. |
+| Recognition over recall | The controlling Unmute remains visible; help and title identify the prerequisite. No remembered command needed. |
+| Flexibility/efficiency | Bulk mute/unmute and keyboard activation remain; lower controls resume as soon as their parent allows. |
+| Learnability | Existing layout and explicit Unmute action show the recovery path. Help now describes the hierarchy. |
+| Repeat-use efficiency | No confirmation or extra click beyond the parent unmute requested by Dave. |
+| Memorability | No control moved or renamed. |
+| Error frequency/severity | Blocked children cannot alter their mute while overridden; errors keep the saved state. |
+| Confidence/satisfaction | Existing success/error feedback remains; higher mute can be reversed without changing saved sounds. |
+| Utility and usability | Both global and workspace cases are exercised, including nested mutes and restored lower availability. |
+| Familiar conventions | Native disabled buttons and ordinary action labels match existing controls. |
+| Mental model | Global mute governs workspace/status actions; workspace mute governs status actions. Individual status mute stays independent under a global mute. |
+
+### Reading and understanding
+
+| Check | Inspected, finding, action and result |
+| --- | --- |
+| Contextual help/docs | Updated existing workspace help and README. Removed the obsolete instruction to unmute individual statuses while the whole workspace is muted. |
+| Specific labels | Mute, Unmute, Mute all, Unmute all remain action-specific; no vague new label. |
+| Concision | Added short prerequisite explanations in existing help and titles; no permanent explanatory row. |
+| Scannability | Existing headings and short button labels retained. Help is still in the workspace info popover. |
+| Outcome first | Tooltip begins with the required action: Unmute workspace sounds first / Unmute this workspace first. |
+| Plain language | No code fields, API terms or new jargon in the interface. |
+| Numbers | No new factual quantity in the main UI; documentation uses existing counts and durations. |
+| Routine content format | Help remains responsive HTML; no PDF or external document required. |
+| Text size/legibility | Same inherited text and existing relative control sizing; enlargement and contrast checks pass. |
+
+### Visual polish
+
+| Check | Inspected, finding, action and result |
+| --- | --- |
+| Consistent spacing | Same 12px action gaps and existing panel gutters; geometry checks pass. |
+| Alignment | Desktop shared workspace/library rows and headings pass existing alignment checks. |
+| Breathing room | Viewed desktop and phone screenshots; controls have clear space and wrap below selectors on narrow screens. |
+| Composed section padding | No section or vendored block added; existing section padding retained. |
+| Vertical rhythm | No margins or row heights changed; the existing rhythm remains. |
+| Type hierarchy | Measured one system font, 48px title and 22px section headings, as before. |
+| Line length/height | Existing 1.6 body line-height and short action labels retained; help wraps in its existing popover. |
+| Off-scale type | No new size or typeface; this scoped change preserves the existing bespoke style. |
+| Weight | Existing label/heading weights retained; disabled buttons use opacity rather than new weight. |
+| Typographic details | Existing ellipsis and sound quotation marks retained; no new numbers requiring tabular alignment. |
+| Truncation | No longer labels; existing 200% text selectors and long-sound-label checks pass. |
+| Palette | No new color introduced; existing disabled opacity reused. |
+| Contrast | Same text colors and computed selector ratios; disabled-button opacity intentionally indicates unavailability. |
+| Color meaning | Meaning comes from enabled state, label and position, with dimming as supporting feedback. |
+| Dark mode | Phone dark screenshot viewed; controls, selectors and row separators remain distinguishable. |
+| Status colors | No new success/warning/error color role; existing error treatment retained. |
+| Primary action | Global Unmute controls global silence; otherwise workspace Unmute all controls workspace silence. Lower mute buttons cannot compete while overridden. |
+| Squint test | Title, global controls and workspace panel retain their hierarchy; inactive mute controls recede. |
+| Grouping | Parent control stays beside workspace selection; status controls stay with their row. |
+| Negative space | Same panel gutters, header separation and row gaps; no new chrome consumes space. |
+| Buttons/cards/inputs | Same native components and styles; only disabled availability and cursor change. |
+| Icons | No new icon; existing labeled info buttons retained. |
+| Radius/shadow | No new radius, shadow or component family. |
+| UI kits | No kit introduced or mixed; bespoke block choices recorded above. |
+| Hover/focus/active | Existing focus outline retained; disabled buttons cannot receive action focus. Final-status keyboard edge now transfers focus to Unmute all. |
+| Motion/transitions | No motion introduced; existing reduced-motion browser pass retained. |
+| Loading/empty/error/disabled | Pending operations and failed requests preserve the hierarchy; empty-workspace disable still passes. Persistent unavailable controls use the default cursor. |
+| Mobile navigation | Same single page; existing wrapping header retained, with no new navigation. |
+| Tables/rows | Existing row stacking and shared desktop grids pass. |
+| Touch targets | Status mute buttons remain 96×44px; workspace mute is at least 87×44px. No new target added; existing smaller info/switch controls are outside this change. |
+| Tablet | Existing geometry checks pass at 768/834/900px. |
+
+Blacklist check: no gradient, feature grid, centered page copy, bubbly component,
+decorative filler, emoji decoration, colored left border, generic hero or repeated
+marketing section was added. No broader redesign was needed for this state change.
+
+Independent hostile verification passed in a separate synthetic fixture. It
+covered actual server-side expiry, a failed expiry read followed by its five-second
+retry, a stale expiry response after a new indefinite mute, expiry during both
+successful and failed pending previews, exact settings preservation, unsaved rename
+text/focus/row identity, and the final-status focus fallback. Both verifier probes
+exited 0, with no uncaught browser errors or remaining blockers. The verifier did
+not rerun the full shared suites; the 52-test Python suite and full Chromium suite
+above were run by the implementing agent.
+
+Live verification on Enterprise: the active settings service serves HTML, JS and
+CSS byte-for-byte equal to these files. A fresh private browser context checked
+all five status buttons and the workspace button against the current mute state
+for every live workspace, with no JavaScript errors. It only changed the browser's
+selected workspace. Settings, library, audio, access-key and herdr-config hashes
+were unchanged. The settings service retained PID 2408920 and herdr retained PID
+4430. Static assets are read from the linked checkout per request, so this
+browser-only update requires a page refresh and no process restart.
