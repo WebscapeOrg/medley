@@ -7,7 +7,7 @@ Medley is a local herdr plugin for Linux and macOS. Python 3.11+ and herdr 0.9.1
 ## Install
 
 ```sh
-herdr plugin install dreinecke/medley
+herdr plugin install WebscapeOrg/medley
 herdr plugin action invoke medley.settings
 ```
 
@@ -16,7 +16,7 @@ In settings, use the **Enabled/Disabled** toggle. This disables herdr's native s
 For a local checkout:
 
 ```sh
-git clone https://github.com/dreinecke/medley.git
+git clone https://github.com/WebscapeOrg/medley.git
 cd medley
 herdr plugin link . --enabled
 python3 medley.py settings

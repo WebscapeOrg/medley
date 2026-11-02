@@ -852,3 +852,10 @@ Security review: new mutation uses the existing loopback/token boundary and lock
 atomic writer. No external URL, shell execution or credential change was added.
 Saved sound names are inserted with textContent. Full unrelated security and
 accessibility audits were not performed.
+
+Deployment verification: the running settings process was relaunched through its
+authenticated endpoint. The server returned the updated mutation handler and
+byte-identical committed HTML, JavaScript and CSS. A fresh browser context rendered
+all five status controls and the workspace control without JavaScript errors.
+Settings, audio-library files, the private access key and herdr configuration
+remained unchanged. The original herdr process continued running.
