@@ -141,7 +141,9 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                                 raise ValueError('Invalid restore data')
                     core.update(lambda settings: settings.update(rules=rules))
                 elif self.path == '/upload':
-                    core.import_audio(data['name'], base64.b64decode(data['content'], validate=True))
+                    key, added = core.add_audio(data['name'], base64.b64decode(data['content'], validate=True))
+                    self.reply(200, {'ok': True, 'id': key, 'added': added})
+                    return
                 elif self.path == '/replace':
                     self.reply(200, {'ok': True, 'id': core.replace_audio(data['id'], data['name'], base64.b64decode(data['content'], validate=True))})
                     return

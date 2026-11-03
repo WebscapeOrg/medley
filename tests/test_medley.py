@@ -229,6 +229,17 @@ class MedleyTests(unittest.TestCase):
         data = core.set_rule('w1', 'working', key)
         self.assertEqual(core.resolve(data, 'w1', 'working').read_bytes(), content)
 
+    def test_importing_known_audio_keeps_the_name_it_has(self):
+        content = (core.ROOT / 'assets/done.mp3').read_bytes()
+        key, added = core.add_audio('first name.mp3', content)
+        self.assertTrue(added)
+        core.rename_audio(key, 'My chime')
+        self.assertEqual(core.add_audio('another file name.mp3', content), (key, False))
+        self.assertEqual(core.library(), [{'id': key, 'name': 'My chime'}])
+        (core.config_dir() / 'library.json').write_text('{}')
+        self.assertEqual(core.add_audio('named again.mp3', content), (key, False))
+        self.assertEqual(core.library(), [{'id': key, 'name': 'named again.mp3'}])
+
     def test_event_dedup_and_initial_silence(self):
         core.update(lambda data: data.update(enabled=True))
         payload = {'event':'pane_agent_status_changed','data':{'workspace_id':'w1'}}

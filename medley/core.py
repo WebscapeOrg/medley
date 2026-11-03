@@ -156,14 +156,21 @@ def staged_audio(name, content):
             os.unlink(temporary)
 
 
-def import_audio(name, content):
+def add_audio(name, content):
+    """Import audio and return (key, added). Audio already in the library keeps the name it has."""
     with staged_audio(name, content) as (temporary, key, name):
         with locked(config_dir()):
+            added = key not in {audio['id'] for audio in library()}
             os.replace(temporary, config_dir() / 'audio' / (key + '.mp3'))
             names = read_json(config_dir() / 'library.json', {})
-            names[key] = Path(name).name[:160]
-            write_json(config_dir() / 'library.json', names)
-    return key
+            if added or key not in names:
+                names[key] = Path(name).name[:160]
+                write_json(config_dir() / 'library.json', names)
+    return key, added
+
+
+def import_audio(name, content):
+    return add_audio(name, content)[0]
 
 
 def replace_audio(key, name, content):

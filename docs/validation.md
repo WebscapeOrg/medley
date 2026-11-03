@@ -1057,3 +1057,26 @@ in the shipped paths. It found the part-way failure and hash-named-entry window 
 "Sound replaced" message after a no-op (fixed), and two known limits left as they are. A status change
 landing in the few milliseconds of a replace can miss that one clip, the same window Remove has. Undo reset
 after a replace done in another tab says the saved choices are invalid, as it already does after Remove.
+
+## Emoji-blind sound order and rename after import — 2026-11-03
+
+Requests: (1) sort the dropdowns alphabetically, ignoring leading emoji; (2) after adding a sound to the
+library, go straight to renaming it.
+
+- One comparator orders the five status dropdowns and the My Sounds list, so they always agree. Leading
+  pictographs, skin tones, flags, keycaps, joined sequences and spaces are ignored for ordering and still
+  shown. Checked in Chromium on a family sequence, skin tone, flag, keycap, red heart with variation
+  selector, subdivision flag, an all-emoji name, an emoji before a number, and ties. The workspace
+  selector keeps herdr's own order.
+- After an import the new sound's name field opens, filled with the file's name and selected, with focus in
+  it; Enter saves, Escape or Cancel keeps the file's name and returns focus to Rename. Importing audio that
+  is already in the library no longer overwrites that sound's name with the new file's name (it did, before
+  this change): the page says "That audio is already in My Sounds as “Name”." and opens nothing. A
+  page talking to a server that has not been relaunched (no id in its reply) falls back to the old message.
+- Changing the ordering key, or removing the rename step, in a scratch copy made the Chromium suite fail.
+
+Independent hostile verification (separate agent, scratch directories only) found no blocking defect. It
+reported the duplicate-import name overwrite and the old-server message (both fixed above) and a nit
+(a repeated expression, fixed). Left as they are: the rename field is rebuilt, losing typed text, by any
+redraw such as a dropdown change, as it already was for Rename; the confirmation line can scroll out of view
+on a long list; and a few symbols that are also emoji (© ® ™) count as emoji when they lead a name.
