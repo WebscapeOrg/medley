@@ -96,6 +96,15 @@ function drawRules() {
   }
   drawMuteAvailability();
 }
+function drawMachineNotes() {
+  const problems = model.machines || [];
+  const note = $('machine-note');
+  const text = problems.map(problem => problem.machine + ' can\u2019t be reached right now' +
+    (model.workspaces.some(workspace => workspace.machine === problem.machine) ? ', so its workspaces are listed as last seen.' : '.')).join(' ');
+  if (note.textContent !== text) note.textContent = text;
+  note.title = problems.map(problem => problem.machine + ': ' + problem.error).join('\n');
+  note.hidden = !problems.length;
+}
 function drawMuteAvailability() {
   const workspace = $('workspace').value;
   const globallyMuted = Boolean(model.mute);
@@ -190,6 +199,7 @@ async function load() {
   $('workspace').replaceChildren(...model.workspaces.map(w => option(w.workspace_id,w.label || w.workspace_id)));
   if (model.workspaces.some(w => w.workspace_id === selected)) $('workspace').value = selected;
   drawRules();
+  drawMachineNotes();
   drawLibrary();
 }
 function muteText(record) {

@@ -26,7 +26,7 @@ class ReplaceRequestTests(unittest.TestCase):
             fake_herdr.chmod(0o700)
             config = root / 'herdr.toml'
             config.write_text('[ui.sound]\n')
-            environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=directory, HERDR_CONFIG_PATH=str(config),
+            environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=directory, HERDR_PLUGIN_STATE_DIR=str(root / 'state'), HERDR_CONFIG_PATH=str(config),
                                HERDR_BIN_PATH=str(fake_herdr))
             environment.pop('MEDLEY_RELAUNCH_TOKEN', None)
             key = hashlib.sha256(first).hexdigest()

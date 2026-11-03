@@ -1,12 +1,17 @@
 import contextlib
+import copy
 import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
+import signal
 import subprocess
+import sys
 import tempfile
+import threading
 import time
 import tomllib
 
@@ -104,6 +109,240 @@ def workspaces():
     result = subprocess.run([os.environ.get('HERDR_BIN_PATH', 'herdr'), 'workspace', 'list'],
                             capture_output=True, text=True, timeout=8, check=True)
     return json.loads(result.stdout)['result']['workspaces']
+
+
+REMOTE_POLL_SECONDS = 5
+REMOTE_RETRY_SECONDS = 30
+REMOTE_TIMEOUT = 12
+REMOTE_WAIT = 3
+REMOTE_LOCK_RETRY_SECONDS = 30
+REMOTE_IDLE_SECONDS = 30
+REMOTE_MAX_WORKSPACES = 500
+
+
+def herdr(*args, timeout=8):
+    """Run herdr and parse its JSON. It runs in its own session, so a timeout stops its ssh too and nothing can prompt on a terminal."""
+    process = subprocess.Popen([os.environ.get('HERDR_BIN_PATH', 'herdr'), *args], stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, text=True, start_new_session=True)
+    try:
+        output, errors = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.communicate()
+        raise
+    if process.returncode:
+        raise subprocess.CalledProcessError(process.returncode, args, output, errors)
+    return json.loads(output)
+
+
+def machines():
+    """The enabled saved SSH machines as [{'id', 'label'}], or None when herdr cannot say."""
+    try:
+        listed = herdr('machine', 'list', '--json')
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+    if not isinstance(listed, list):
+        return None
+    found, seen = [], set()
+    for machine in listed:
+        if not (isinstance(machine, dict) and machine.get('enabled') is True
+                and isinstance(machine.get('id'), str) and isinstance(machine.get('label'), str)):
+            continue
+        label = machine['label'].strip()[:100]
+        if label and label not in seen:
+            seen.add(label)
+            found.append({'id': machine['id'], 'label': label})
+    return found
+
+
+def remote_key(label, workspace_id):
+    """Rules, mutes and statuses for a saved machine's workspace; local workspaces keep their bare id."""
+    return label + '/' + workspace_id
+
+
+def short_reason(text):
+    """One readable line from herdr's error text, which can wrap the reason in a Rust debug string."""
+    text = str(text)
+    wrapped = re.search(r'error: "(.*)" \}', text)
+    if wrapped:
+        text = wrapped.group(1).replace('\\"', '"')
+    lines = [' '.join(line.split()) for line in text.splitlines() if line.strip()]
+    return (lines[0] if lines else 'The machine did not answer.')[:300]
+
+
+def machine_workspaces(machine):
+    """(workspaces, None) from one saved machine, or (None, why it could not be read)."""
+    try:
+        listed = herdr('--machine', machine['id'], 'workspace', 'list', timeout=REMOTE_TIMEOUT)['result']['workspaces']
+        if not isinstance(listed, list):
+            raise ValueError('herdr returned no list of workspaces.')
+        found = []
+        for workspace in listed[:REMOTE_MAX_WORKSPACES]:
+            identity, name, status = workspace.get('workspace_id'), workspace.get('label'), workspace.get('agent_status')
+            if not isinstance(identity, str) or not identity or len(identity) > 60:
+                continue
+            found.append({'workspace_id': identity, 'agent_status': status if status in STATUSES else None,
+                          'label': (name if isinstance(name, str) and name.strip() else identity)[:200]})
+        return found, None
+    except subprocess.CalledProcessError as error:
+        return None, short_reason((error.stderr or '').strip() or (error.stdout or '').strip() or error)
+    except subprocess.TimeoutExpired:
+        return None, 'No answer within %d seconds.' % REMOTE_TIMEOUT
+    except Exception as error:
+        return None, short_reason(error)
+
+
+def remote_cache():
+    try:
+        cache = read_json(state_dir() / 'remote.json', {})
+    except ValueError:
+        return {}
+    return cache if isinstance(cache, dict) else {}
+
+
+def remote_workspaces():
+    """Saved machines' workspaces as the poller last saw them, shaped like workspaces() with composite keys."""
+    found = []
+    for label, entry in remote_cache().items():
+        if not isinstance(label, str) or not isinstance(entry, dict) or not isinstance(entry.get('workspaces'), list):
+            continue
+        for workspace in entry['workspaces']:
+            if not (isinstance(workspace, dict) and isinstance(workspace.get('workspace_id'), str) and isinstance(workspace.get('label'), str)):
+                continue
+            found.append({'workspace_id': remote_key(label, workspace['workspace_id']),
+                          'label': label + ' \u2192 ' + workspace['label'] + ('' if entry.get('ok') else ' (last seen)'),
+                          'agent_status': workspace.get('agent_status'), 'machine': label})
+    return found
+
+
+def remote_problems():
+    return [{'machine': label, 'error': str(entry.get('error') or '')} for label, entry in remote_cache().items()
+            if isinstance(label, str) and isinstance(entry, dict) and not entry.get('ok')]
+
+
+def record_remote_statuses(label, found, silent):
+    """Remember each workspace's status; return the changes worth a sound unless `silent`."""
+    changes = []
+    with locked(state_dir()):
+        statuses = read_json(state_dir() / 'statuses.json', {})
+        before = dict(statuses)
+        for workspace in found:
+            status = workspace['agent_status']
+            if status not in STATUSES:
+                continue
+            key = remote_key(label, workspace['workspace_id'])
+            previous = statuses.get(key)
+            statuses[key] = status
+            if not silent and previous is not None and previous != status:
+                changes.append((key, status))
+        if statuses != before:
+            write_json(state_dir() / 'statuses.json', statuses)
+    return changes
+
+
+def play_remote_change(key, status):
+    data = settings()
+    if not data.get('enabled') or muted():
+        return
+    path = resolve(data, key, status)
+    if path is not None:
+        play(path)
+
+
+def new_poll_state():
+    return {'synced': set(), 'retry': {}, 'pending': {}}
+
+
+def start_lookup(machine):
+    """Ask one machine for its workspaces on a daemon thread, so a slow machine holds nobody else up."""
+    lookup = {'machine': machine, 'done': threading.Event(), 'answer': None}
+
+    def run():
+        try:
+            lookup['answer'] = machine_workspaces(machine)
+        except BaseException as error:
+            lookup['answer'] = (None, short_reason(error))
+        lookup['done'].set()
+
+    threading.Thread(target=run, daemon=True).start()
+    return lookup
+
+
+def poll_remote(state):
+    """One pass over the enabled saved machines: refresh what the page lists and play sounds for status changes.
+    Returns how many machines there are (0 when herdr has none or cannot say).
+
+    `state` (from new_poll_state) belongs to the polling loop. A machine that has not answered within
+    REMOTE_WAIT is left running and read on a later pass. The first pass after a start, and the first
+    after a machine was unreachable, only record statuses, so nothing plays late."""
+    listed = machines()
+    if listed is None:
+        return 0
+    now = time.monotonic()
+    pending = state['pending']
+    for machine in listed:
+        label = machine['label']
+        if label not in pending and state['retry'].get(label, 0) <= now:
+            pending[label] = start_lookup(machine)
+    deadline = time.monotonic() + REMOTE_WAIT
+    for lookup in list(pending.values()):
+        lookup['done'].wait(max(0, deadline - time.monotonic()))
+    cache = remote_cache()
+    before = copy.deepcopy(cache)
+    changes = []
+    for label in [label for label, lookup in pending.items() if lookup['done'].is_set()]:
+        lookup = pending.pop(label)
+        found, error = lookup['answer']
+        known = cache.get(label) if isinstance(cache.get(label), dict) else {}
+        try:
+            if found is None:
+                cache[label] = {**known, 'id': lookup['machine']['id'], 'ok': False, 'error': error}
+                state['retry'][label] = time.monotonic() + REMOTE_RETRY_SECONDS
+                state['synced'].discard(label)
+                continue
+            cache[label] = {'id': lookup['machine']['id'], 'ok': True, 'error': None, 'workspaces': found}
+            state['retry'].pop(label, None)
+            changes += record_remote_statuses(label, found, silent=label not in state['synced'])
+            state['synced'].add(label)
+        except Exception as problem:
+            print('Medley: could not record', label + ':', problem, file=sys.stderr)
+    current = {machine['label'] for machine in listed}
+    for label in [label for label in cache if label not in current]:
+        del cache[label]
+        for part in (state['synced'], state['retry'], pending):
+            part.discard(label) if isinstance(part, set) else part.pop(label, None)
+    if cache != before:
+        write_json(state_dir() / 'remote.json', cache)
+    for key, status in changes:
+        try:
+            play_remote_change(key, status)
+        except Exception as error:
+            print('Medley: could not play a sound for', key + ':', error, file=sys.stderr)
+    return len(listed)
+
+
+def poll_remote_forever(stop):
+    """Watch saved machines until `stop` is set. One process per state directory watches; others wait their turn."""
+    directory = state_dir()
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (directory / 'remote.lock').open('a') as lock:
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if stop.wait(REMOTE_LOCK_RETRY_SECONDS):
+                    return
+        state = new_poll_state()
+        while True:
+            count = 0
+            try:
+                count = poll_remote(state)
+            except Exception as error:
+                print('Medley: remote machines:', error, file=sys.stderr)
+            if stop.wait(REMOTE_POLL_SECONDS if count else REMOTE_IDLE_SECONDS):
+                return
 
 
 def library():

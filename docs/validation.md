@@ -1080,3 +1080,34 @@ reported the duplicate-import name overwrite and the old-server message (both fi
 (a repeated expression, fixed). Left as they are: the rename field is rebuilt, losing typed text, by any
 redraw such as a dropdown change, as it already was for Rename; the confirmation line can scroll out of view
 on a long list; and a few symbols that are also emoji (© ® ™) count as emoji when they lead a name.
+
+## Saved SSH machines — 2026-11-03
+
+Request: "Currently we have the local herdr agents in our lists, could we also have the remote ones?"
+(Voyager's workspaces, Voyager and Leapfrog.)
+
+- Remote workspaces appear after the local ones as "Machine → Workspace" with their own sounds, status
+  mutes, mute all, previews and resets, keyed by machine label and workspace id (`Voyager/w4`). Sounds for
+  them play on this computer when their agents change status. Checked with a fake herdr (no network): first
+  pass silent; a change plays the rule for that workspace; global mute, a disabled Medley and a status mute
+  play nothing and leave nothing to play late; a restart or an outage resyncs silently; an unreachable
+  machine keeps its last workspaces marked "(last seen)" and shows a note; machines removed or disabled
+  leave the list while their choices stay.
+- The real poller read Voyager over ssh with herdr 0.9.5 on this computer, using `herdr --machine`: it
+  listed "Voyager → 🛰️ Voyager" and "Voyager → 🐸 Leapfrog" in 0.3 seconds with the saved
+  machine pointed at Voyager's Tailscale name. Before that change herdr could not reach Voyager at all (its
+  saved name `voyager` means `voyager.local`, which this computer cannot look up).
+- Independent hostile verification (separate agent, fake herdr and scratch directories only) found two high
+  defects (odd machine data could 503 every `/api` call; one bad machine aborted a whole pass), medium ones (a
+  hung machine delayed the others and Ctrl+C; two settings processes could play one sound twice; duplicate
+  labels) and low ones. All are fixed and each has a test: data from a machine is validated before it is cached
+  and the cache is read defensively; each machine is read on its own daemon thread; one process per state
+  directory watches (`flock`); duplicate labels keep the first; idle passes no longer rewrite the status
+  cache; herdr runs in its own session so a timeout stops its ssh; the loop checks every 30 seconds with no
+  machines; Ctrl+C with a hung lookup in flight now exits in 0.03 seconds (it took 7 before).
+- Left as they are: reading a machine that hangs completes on a later pass (up to the 12-second limit);
+  enabling Medley rewrites the local status baseline, so a remote change within five seconds of enabling is
+  missed; the failure reason is only in the note's tooltip.
+- Not exercised: sound actually playing for a remote status change on this computer (no real status change was
+  triggered on Voyager); the check used fake herdr for that path.
+

@@ -24,7 +24,7 @@ python3 medley.py settings
 
 The settings command opens a private localhost URL on **port 43127**. Bookmark the full address of that page, including its access key after `#`: the port and key stay the same across fresh launches and Relaunch. The key is stored privately in `settings-access.json` in Medley's config directory, with owner-only permissions. Keep the bookmark private. Opening the settings command again reuses the existing server for that config directory. It checks the server's identity without sending the access key to an unrelated listener; a port conflict with another app gives an error instead of silently changing the port. Use `settings --port NUMBER` for a deliberate override, or `--port 0` for a temporary port.
 
-Keep the settings command running while editing; Ctrl+C closes the settings server. A bookmark does not start a stopped server: run the settings command again after closing it or restarting your computer. Sound rules continue working through herdr's event hooks after settings closes. A refresh in the browser preserves its access token in tab session storage. **Relaunch**, beside Uninstall Medley, restarts only this settings server with the current code and reloads the same tab. It keeps imported sounds, saved choices and the enabled setting; herdr and its agents keep running. An older settings page on a temporary port can remain open; use the settings command once to open the new bookmarkable address.
+Keep the settings command running while editing; Ctrl+C closes the settings server. A bookmark does not start a stopped server: run the settings command again after closing it or restarting your computer. Sound rules for this computer's own workspaces continue working through herdr's event hooks after settings closes; sounds for saved SSH machines (see [Remote machines](#remote-machines)) need the settings server to keep running. A refresh in the browser preserves its access token in tab session storage. **Relaunch**, beside Uninstall Medley, restarts only this settings server with the current code and reloads the same tab. It keeps imported sounds, saved choices and the enabled setting; herdr and its agents keep running. An older settings page on a temporary port can remain open; use the settings command once to open the new bookmarkable address.
 
 ## Choose your sounds
 
@@ -58,9 +58,19 @@ A timed mute runs out by itself; **until unmuted** stays on until you end it. Gl
 during a mute are still tracked, so nothing plays late when it ends. The record is `mute.json` in
 Medley's config directory.
 
+## Remote machines
+
+If herdr has saved SSH machines (`herdr machine list`), Medley lists every enabled machine's workspaces after this computer's own, as **Machine → Workspace**, and plays their sounds on this computer when their agents change status. They take the same five statuses, previews, mutes and global mute as local workspaces.
+
+- Medley's settings server asks each machine every 5 seconds with `herdr --machine <profile> workspace list` (every 30 seconds while herdr has no saved machines), so herdr must be able to reach the machine without a prompt. A machine that does not answer within 12 seconds counts as unreachable, and one slow machine does not hold up the others. A status that changes and changes back within one interval is not heard, as with local rapid transitions.
+- Choices for a remote workspace are kept under the machine's label and the workspace's id on that machine (`Voyager/w4`). Renaming a workspace keeps them; renaming the machine in herdr starts its workspaces afresh.
+- The first look after the settings server starts, and the first after a machine was unreachable, only records statuses, so nothing plays late. An unreachable machine is tried again every 30 seconds; its workspaces stay listed as *(last seen)* and a note above the list says it cannot be reached (hover it for herdr's reason).
+- Local sounds do not depend on this. Remote sounds do: they need the settings server running (as a service, or the settings command), and stop with it. Only one settings server per state directory watches at a time, so a second copy never plays a sound twice. `settings --no-remote` turns the watching off. The list keeps showing saved machines while Medley is disabled; only playback needs it enabled.
+- Sounds still play on this computer, not on the remote one. Install Medley on the remote machine to hear its sounds there.
+
 ## Where audio plays
 
-Plugin hooks run on the **herdr server machine**, so audio plays there, including for the currently focused workspace. This release does not route sound to remote clients or mirror herdr's focused-tab suppression. It is suitable for a local desktop server; do not enable it on a remote server expecting your laptop to play audio. Playback is bounded to 30 seconds per clip; overlapping notifications are dropped while a clip is playing. Very long MP3s may be interrupted.
+Plugin hooks run on the **herdr server machine**, so audio plays there, including for the currently focused workspace. Saved SSH machines are the exception: Medley watches them from the settings server and plays their sounds on the machine that runs it. This release does not route sound to remote clients or mirror herdr's focused-tab suppression. It is suitable for a local desktop server; do not enable it on a remote server expecting your laptop to play audio. Playback is bounded to 30 seconds per clip; overlapping notifications are dropped while a clip is playing. Very long MP3s may be interrupted.
 
 The audio library and mappings stay outside the checkout under herdr's plugin config directory (`herdr plugin config-dir medley`). Only local files are read. No account, telemetry or cloud upload is involved. The browser uses a random bearer token and a loopback-only HTTP server. Treat the printed settings URL as private.
 

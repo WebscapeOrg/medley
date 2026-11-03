@@ -54,7 +54,7 @@ def matching_server(port, token):
         connection.close()
 
 
-def serve(open_browser=True, port=DEFAULT_PORT):
+def serve(open_browser=True, port=DEFAULT_PORT, poll_remote=False):
     token = settings_token()
     relaunch = threading.Event()
     class Handler(BaseHTTPRequestHandler):
@@ -97,7 +97,8 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                     self.reply(404, {'error': 'Not found'})
                     return
                 self.reply(200, {'settings': core.settings(), 'audio': core.library(),
-                                 'workspaces': core.workspaces(), 'statuses': core.STATUSES,
+                                 'workspaces': core.workspaces() + core.remote_workspaces(),
+                                 'machines': core.remote_problems(), 'statuses': core.STATUSES,
                                  'mute': core.muted()})
             except Exception as error:
                 self.reply(503, {'error': str(error)})
@@ -195,6 +196,9 @@ def serve(open_browser=True, port=DEFAULT_PORT):
             webbrowser.open(url)
         return
     server.daemon_threads = True
+    stop_polling = threading.Event()
+    if poll_remote:
+        threading.Thread(target=core.poll_remote_forever, args=(stop_polling,), daemon=True).start()
     url = f'http://127.0.0.1:{server.server_port}/#{token}'
     print('Medley settings:', url, flush=True)
     print('Press Ctrl+C to close settings. Sound rules continue through herdr event hooks.', flush=True)
@@ -205,11 +209,13 @@ def serve(open_browser=True, port=DEFAULT_PORT):
     except KeyboardInterrupt:
         pass
     finally:
+        stop_polling.set()
         server.server_close()
     if relaunch.is_set():
         environment = dict(os.environ, MEDLEY_RELAUNCH_TOKEN=token)
         os.execve(sys.executable, [sys.executable, str(core.ROOT / 'medley.py'),
-                                 'settings', '--no-browser', '--port', str(server.server_port)], environment)
+                                 'settings', '--no-browser', '--port', str(server.server_port),
+                                 *([] if poll_remote else ['--no-remote'])], environment)
 
 
 def mute_length(text):
@@ -246,6 +252,8 @@ def main():
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--port', type=int, default=DEFAULT_PORT,
                         help=f'Settings port (default: {DEFAULT_PORT}; 0 chooses a temporary port)')
+    parser.add_argument('--no-remote', action='store_true',
+                        help='settings: do not watch the saved SSH machines for remote workspace sounds')
     parser.add_argument('--for', dest='length', metavar='LENGTH',
                         help='mute: how long, as 45m, 1h or 1h30 (default 1h); 0 means until unmuted')
     parser.add_argument('--toggle', action='store_true', help='mute: unmute instead when already muted')
@@ -253,7 +261,7 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == 'settings':
-            serve(not args.no_browser, args.port)
+            serve(not args.no_browser, args.port, poll_remote=not args.no_remote)
         elif args.command == 'mute':
             if args.toggle and core.muted():
                 core.unmute()
