@@ -16,7 +16,7 @@ from medley import core
 
 
 class ReplaceRequestTests(unittest.TestCase):
-    def test_replace_needs_the_token_and_keeps_the_name_and_choices(self):
+    def test_replace_and_upload_need_the_token_and_answer_with_the_sound_id(self):
         first = (core.ROOT / 'assets/done.mp3').read_bytes()
         second = (core.ROOT / 'assets/request.mp3').read_bytes()
         with tempfile.TemporaryDirectory() as directory:
@@ -71,6 +71,11 @@ class ReplaceRequestTests(unittest.TestCase):
                 self.assertEqual(api['settings']['rules'], {'w1': {'done': new_key}})
                 self.assertEqual((root / 'audio' / (new_key + '.mp3')).read_bytes(), second)
                 self.assertFalse((root / 'audio' / (key + '.mp3')).exists())
+                self.assertEqual(request('/upload', {'name': 'fresh.mp3', 'content': base64.b64encode(first).decode()}, authorized=False)[0], 403)
+                self.assertEqual(request('/upload', {'name': 'fresh.mp3', 'content': base64.b64encode(first).decode()}), (200, {'ok': True, 'id': key, 'added': True}))
+                self.assertEqual({audio['id']: audio['name'] for audio in request('/api')[1]['audio']}, {new_key: 'My chime', key: 'fresh.mp3'})
+                self.assertEqual(request('/upload', {'name': 'again.mp3', 'content': base64.b64encode(first).decode()}), (200, {'ok': True, 'id': key, 'added': False}))
+                self.assertEqual({audio['id']: audio['name'] for audio in request('/api')[1]['audio']}[key], 'fresh.mp3')
             finally:
                 process.terminate()
                 process.communicate(timeout=5)

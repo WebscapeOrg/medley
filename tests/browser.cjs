@@ -69,6 +69,26 @@ await page.keyboard.press('Escape');assert.equal(await page.locator('#library-he
 
 await page.evaluate(()=>{model.audio=[{id:'z',name:'zebra.mp3'},{id:'a10',name:'Alpha 10.MP3'},{id:'b',name:'beta.mp3'},{id:'a2',name:'alpha 2.mp3'}];drawRules();});
 assert.deepEqual(await page.locator('#status-done option').allTextContents(),['Default','None · quiet','alpha 2','Alpha 10','beta','zebra']);
+await page.evaluate(()=>{model.audio=[{id:'z',name:'zebra.mp3'},{id:'e1',name:'\u{1F514} Bell.mp3'},{id:'a10',name:'Alpha 10.MP3'},{id:'e2',name:'\u{1F3B5}\u{1F3B6} Chime.mp3'},{id:'b',name:'beta.mp3'},{id:'e3',name:'\u{1F468}\u200D\u{1F469}\u200D\u{1F467} Family.mp3'},{id:'a2',name:'alpha 2.mp3'},{id:'e4',name:'\u{1F44D}\u{1F3FD}Dune.mp3'}];drawRules();drawLibrary();});
+const expectedOrder=['alpha 2','Alpha 10','\u{1F514} Bell','beta','\u{1F3B5}\u{1F3B6} Chime','\u{1F44D}\u{1F3FD}Dune','\u{1F468}\u200D\u{1F469}\u200D\u{1F467} Family','zebra'];
+assert.deepEqual(await page.locator('#status-done option').allTextContents(),['Default','None · quiet',...expectedOrder]);
+assert.deepEqual(await page.locator('#library-files .library-file > span').allTextContents(),expectedOrder);
+assert.deepEqual(await page.evaluate(()=>{
+  const sorted=names=>names.map((name,i)=>({id:'n'+i,name})).sort(bySoundName).map(audio=>audio.name);
+  return [
+    sorted(['Delta','\u{1F1FF}\u{1F1E6} Charlie','1\uFE0F\u20E3 Bravo','\u2764\uFE0F Alfa','  \u{1F514}  Echo']),
+    (tie=>[tie.slice(0,3).sort(),tie[3]])(sorted(['Bell \u{1F514}','Bell','\u{1F514} Bell','\u{1F3B5} Bell'])),
+    sorted(['\u{1F514}','Apple','Zed']),
+    sorted(['2 Bell','10 Bell','\u{1F514} 3 Bell']),
+    sorted(['\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F} England','Dover','Fiji'])
+  ];}),[
+    ['\u2764\uFE0F Alfa','1\uFE0F\u20E3 Bravo','\u{1F1FF}\u{1F1E6} Charlie','Delta','  \u{1F514}  Echo'],
+    [['Bell','\u{1F3B5} Bell','\u{1F514} Bell'].sort(),'Bell \u{1F514}'],
+    ['\u{1F514}','Apple','Zed'],
+    ['2 Bell','\u{1F514} 3 Bell','10 Bell'],
+    ['Dover','\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F} England','Fiji']
+  ]);
+await page.evaluate(()=>{model.audio=[{id:'z',name:'zebra.mp3'},{id:'a10',name:'Alpha 10.MP3'},{id:'b',name:'beta.mp3'},{id:'a2',name:'alpha 2.mp3'}];drawRules();});
 await page.evaluate(()=>load());
 await page.locator('#status-done').selectOption('none');await page.getByText('Sound saved.',{exact:true}).waitFor();
 await page.locator('#workspace').selectOption('w2');assert.equal(await page.locator('#status-done').inputValue(),'default');
@@ -77,7 +97,10 @@ await page.getByRole('button',{name:'Reset all to default',exact:true}).click();
 await page.getByRole('button',{name:'Undo reset',exact:true}).click();await page.getByText('Previous sound choices restored.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),'none');
 const chooserReady=page.waitForEvent('filechooser');
 await page.getByRole('button',{name:'Import an audio file',exact:true}).click();
-await (await chooserReady).setFiles('assets/done.mp3');await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
+await (await chooserReady).setFiles('assets/done.mp3');await page.getByText('Audio imported. Name it, then select it for any status.',{exact:true}).waitFor();
+const nameField=page.getByRole('textbox',{name:'Sound name',exact:true});
+assert.equal(await nameField.inputValue(),'done');assert.equal(await nameField.evaluate(el=>el===document.activeElement&&el.selectionStart===0&&el.selectionEnd===el.value.length),true);
+await page.keyboard.press('Escape');assert.equal(await nameField.count(),0);assert.equal(await page.getByRole('button',{name:'Rename done',exact:true}).evaluate(el=>el===document.activeElement),true);
 assert.equal(await page.locator('#status-done option').count(),3);
 assert.equal(await page.locator('#status-done option').last().textContent(),'done');
 assert.equal(await page.locator('#import').count(),0);
@@ -165,7 +188,12 @@ await page.getByRole('button',{name:'Import an audio file',exact:true}).click();
 assert.equal(await page.evaluate(()=>window.pickerOptions.startIn),'downloads');
 assert.equal(await page.getByRole('button',{name:'Rename done',exact:true}).isVisible(),true);
 await page.evaluate(()=>{window.showOpenFilePicker=async options=>{window.pickerOptions=options;const data=await (await fetch('/preview',{method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify({workspace:'w1',status:'done'})})).blob();return [{getFile:async()=>new File([data],'done.mp3',{type:'audio/mpeg'})}];};});
-await page.getByRole('button',{name:'Import an audio file',exact:true}).click();await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
+await page.getByRole('button',{name:'Import an audio file',exact:true}).click();await page.getByText('That audio is already in My Sounds as \u201cdone\u201d.',{exact:true}).waitFor();
+assert.equal(await nameField.count(),0);
+await page.route('**/upload',route=>route.fulfill({status:200,contentType:'application/json',body:'{"ok":true}'}));
+await page.locator('#upload').setInputFiles({name:'older-server.mp3',mimeType:'audio/mpeg',buffer:fs.readFileSync('assets/request.mp3')});
+await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();assert.equal(await nameField.count(),0);
+await page.unroute('**/upload');
 const originalAudio=fs.readFileSync('assets/done.mp3'),replacementAudio=fs.readFileSync('assets/request.mp3');
 const pickFile=(bytes,fileName)=>page.evaluate(([base64,fileName])=>{window.showOpenFilePicker=async options=>{window.pickerOptions=options;return [{getFile:async()=>new File([Uint8Array.from(atob(base64),c=>c.charCodeAt(0))],fileName,{type:'audio/mpeg'})}];};},[bytes.toString('base64'),fileName]);
 const previewBytes=id=>page.evaluate(async id=>{const response=await fetch('/preview',{method:'POST',headers:{'X-Medley-Token':token,'Content-Type':'application/json'},body:JSON.stringify({id})});if(!response.ok)return 'status '+response.status;let text='';for(const byte of new Uint8Array(await response.arrayBuffer()))text+=String.fromCharCode(byte);return btoa(text);},id);
@@ -195,11 +223,13 @@ let chooser=page.waitForEvent('filechooser');await replaceDone.click();
 await (await chooser).setFiles({name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('invalid')});
 await page.getByRole('alert').waitFor();assert.match(await page.getByRole('alert').textContent(),/Choose an MP3 or WAV file up to 20 MB/);
 assert.equal(await page.locator('#status-done').inputValue(),replaced);
-await page.locator('#upload').setInputFiles({name:'second.mp3',mimeType:'audio/mpeg',buffer:originalAudio});await page.getByText('Audio imported. Select it for any status below.',{exact:true}).waitFor();
+await page.locator('#upload').setInputFiles({name:'second.mp3',mimeType:'audio/mpeg',buffer:originalAudio});await page.getByText('Audio imported. Name it, then select it for any status.',{exact:true}).waitFor();
+assert.equal(await nameField.inputValue(),'second');await nameField.fill('Second wind');await page.keyboard.press('Enter');await page.getByText('Sound renamed.',{exact:true}).waitFor();
+assert.equal(await page.getByRole('button',{name:'Rename Second wind',exact:true}).evaluate(el=>el===document.activeElement),true);
 chooser=page.waitForEvent('filechooser');await replaceDone.click();await (await chooser).setFiles({name:'copy.mp3',mimeType:'audio/mpeg',buffer:originalAudio});
-await page.getByRole('alert').waitFor();assert.equal(await page.getByRole('alert').textContent(),'This audio is already in My Sounds as “second”. Choose it in a workspace, or remove one of the two sounds.');
+await page.getByRole('alert').waitFor();assert.equal(await page.getByRole('alert').textContent(),'This audio is already in My Sounds as “Second wind”. Choose it in a workspace, or remove one of the two sounds.');
 assert.equal(await page.locator('#status-done').inputValue(),replaced);assert.equal(await page.evaluate(()=>document.activeElement.id),'replace-'+replaced);
-page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove second',exact:true}).click();await page.getByText('Sound removed. Choices using it now use Default.',{exact:true}).waitFor();
+page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove Second wind',exact:true}).click();await page.getByText('Sound removed. Choices using it now use Default.',{exact:true}).waitFor();
 assert.equal(await page.locator('#library-files .library-file').count(),1);
 chooser=page.waitForEvent('filechooser');await replaceDone.click();await (await chooser).setFiles({name:'again.mp3',mimeType:'audio/mpeg',buffer:replacementAudio});
 await page.getByText('That file is already this sound’s audio. Nothing changed.',{exact:true}).waitFor();assert.equal(await page.locator('#status-done').inputValue(),replaced);

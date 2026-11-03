@@ -27,6 +27,13 @@ async function run(message, operation, pending = 'Saving…', recover = true) {
     if (focusedId && $(focusedId)) [$(focusedId), $('workspace-mute'), $('mute')].find(element => !element.disabled)?.focus();
   }
 }
+const leadingEmoji = /^(?:[0-9#*]\ufe0f?\u20e3|\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|[\u200d\ufe0f\u{e0020}-\u{e007f}]|\s)+/u;
+const soundTitle = audio => audio.name.replace(/\.mp3$/i,'');
+const compareText = (a, b) => a.localeCompare(b, undefined, {sensitivity:'base', numeric:true});
+function bySoundName(a, b) {
+  const [first, second] = [a, b].map(audio => soundTitle(audio).replace(leadingEmoji, '') || soundTitle(audio));
+  return compareText(first, second) || compareText(soundTitle(a), soundTitle(b)) || compareText(a.id, b.id);
+}
 function option(value, text) {const item = document.createElement('option'); item.value = value; item.textContent = text; return item;}
 function closePreview() {
   $('player').pause();
@@ -64,7 +71,7 @@ function drawRules() {
     const label = document.createElement('label'); label.htmlFor = 'status-' + status;
     label.textContent = ({idle:'Idle',working:'Working',blocked:'Needs attention',done:'Done',unknown:'Unknown'})[status];
     const select = document.createElement('select'); select.id = label.htmlFor;
-    select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.slice().sort((a,b) => a.name.replace(/\.mp3$/i,'').localeCompare(b.name.replace(/\.mp3$/i,''),undefined,{sensitivity:'base',numeric:true})).map(audio => option(audio.id,audio.name.replace(/\.mp3$/i,''))));
+    select.append(option('default','Default'), option('none','None · quiet'), ...model.audio.slice().sort(bySoundName).map(audio => option(audio.id,soundTitle(audio))));
     const choice = model.settings.rules[workspace]?.[status] || 'default';
     select.value = choice;
     if (select.selectedIndex < 0) {select.append(option(choice, 'Missing sound')); select.value = choice;}
@@ -116,9 +123,9 @@ function drawLibrary() {
   document.querySelector('.workspace-sounds-layout').style.setProperty('--panel-rows',Math.max(6,model.audio.length) + 1);
   if ($('library-files').contains($('preview-row'))) closePreview();
   $('library-files').replaceChildren();
-  for (const audio of model.audio.slice().sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}))) {
+  for (const audio of model.audio.slice().sort(bySoundName)) {
     const row = document.createElement('div'); row.className = 'library-file';
-    const name = document.createElement('span'); name.textContent = audio.name.replace(/\.mp3$/i,'');
+    const name = document.createElement('span'); name.textContent = soundTitle(audio);
     const remove = document.createElement('button'); remove.textContent = 'Remove';
     remove.setAttribute('aria-label','Remove ' + name.textContent);
     remove.onclick = () => {
@@ -153,7 +160,7 @@ function editSoundName(audio, row, returnFocus) {
   const label = document.createElement('label'); label.textContent = 'Sound name';
   const input = document.createElement('input'); input.type = 'text'; input.required = true; input.maxLength = 160;
   input.id = 'sound-name-' + audio.id; label.htmlFor = input.id;
-  input.value = audio.name.replace(/\.mp3$/i,'');
+  input.value = soundTitle(audio);
   const error = document.createElement('p'); error.role = 'alert'; error.className = 'rename-error'; error.hidden = true;
   error.id = input.id + '-error'; input.setAttribute('aria-describedby',error.id);
   const save = document.createElement('button'); save.type = 'submit'; save.textContent = 'Save';
@@ -230,10 +237,18 @@ function audioContent(file) {
 }
 function importAudio(file) {
   if (!file) return;
-  return run('Audio imported. Select it for any status below.',async () => {
-  const content = await audioContent(file);
-  await request('/upload',{name:file.name,content});$('upload').value = '';await load();
-  });
+  let importedId;
+  return run('Audio imported. Name it, then select it for any status.',async () => {
+    const content = await audioContent(file);
+    const reply = await request('/upload',{name:file.name,content});
+    $('upload').value = ''; await load();
+    if (reply.id === undefined) return 'Audio imported. Select it for any status below.';
+    if (!reply.added) {
+      const known = model.audio.find(audio => audio.id === reply.id);
+      return known ? 'That audio is already in My Sounds as \u201c' + soundTitle(known) + '\u201d.' : 'That audio is already in My Sounds.';
+    }
+    importedId = reply.id;
+  }).then(() => importedId && $('rename-' + importedId)?.click());
 };
 function replaceAudio(audio, file) {
   if (!file) return;
