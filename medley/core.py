@@ -115,8 +115,10 @@ def library():
             for p in sorted(directory.glob('*.mp3'))]
 
 
-def import_audio(name, content):
-    if not name.lower().endswith(('.mp3', '.wav')) or not content or len(content) > MAX_AUDIO:
+@contextlib.contextmanager
+def staged_audio(name, content):
+    """Validate an MP3 or WAV and yield (temporary MP3 path, SHA-256 key, MP3 file name); the temporary file is removed on exit."""
+    if not isinstance(name, str) or not name.lower().endswith(('.mp3', '.wav')) or not content or len(content) > MAX_AUDIO:
         raise ValueError('Choose an MP3 or WAV file between 1 byte and 20 MB.')
     if not shutil.which('ffprobe'):
         raise ValueError('Install ffmpeg to validate imported audio.')
@@ -148,16 +150,59 @@ def import_audio(name, content):
             finally:
                 Path(converted).unlink(missing_ok=True)
             name = str(Path(name).with_suffix('.mp3'))
-        key = hashlib.sha256(content).hexdigest()
-        with locked(config_dir()):
-            os.replace(temporary, directory / (key + '.mp3'))
-            names = read_json(config_dir() / 'library.json', {})
-            names[key] = Path(name).name[:160]
-            write_json(config_dir() / 'library.json', names)
-        return key
+        yield temporary, hashlib.sha256(content).hexdigest(), name
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def import_audio(name, content):
+    with staged_audio(name, content) as (temporary, key, name):
+        with locked(config_dir()):
+            os.replace(temporary, config_dir() / 'audio' / (key + '.mp3'))
+            names = read_json(config_dir() / 'library.json', {})
+            names[key] = Path(name).name[:160]
+            write_json(config_dir() / 'library.json', names)
+    return key
+
+
+def replace_audio(key, name, content):
+    """Swap the audio behind a library entry. Its name and every workspace choice using it are kept.
+
+    Audio identities are content hashes, so the new audio gets a new key; `name` only says whether
+    the upload is an MP3 or a WAV and is never stored. The steps are ordered so that a failure part
+    way leaves nothing misleading (a name with no file is invisible; two entries with one name are
+    harmless) and repeating the replace finishes the swap."""
+    if not isinstance(key, str) or len(key) != 64 or any(c not in '0123456789abcdef' for c in key):
+        raise ValueError('Choose an audio file from the library.')
+    with staged_audio(name, content) as (temporary, new_key, _):
+        with locked(config_dir()):
+            current = {audio['id']: audio['name'] for audio in library()}
+            if key not in current:
+                raise ValueError('This sound is no longer in the library. Refresh and try again.')
+            if new_key == key:
+                return key
+            if new_key in current and current[new_key] != current[key]:
+                other = current[new_key][:-4] if current[new_key].lower().endswith('.mp3') else current[new_key]
+                raise ValueError('This audio is already in My Sounds as “' + other + '”. Choose it in a workspace, or remove one of the two sounds.')
+            directory = config_dir() / 'audio'
+            names = read_json(config_dir() / 'library.json', {})
+            names[new_key] = current[key]
+            write_json(config_dir() / 'library.json', names)
+            os.replace(temporary, directory / (new_key + '.mp3'))
+            data = settings()
+            changed = False
+            for rules in data.get('rules', {}).values():
+                for status, choice in rules.items():
+                    if choice == key:
+                        rules[status] = new_key
+                        changed = True
+            if changed:
+                write_json(config_dir() / 'settings.json', data)
+            names.pop(key, None)
+            write_json(config_dir() / 'library.json', names)
+            (directory / (key + '.mp3')).unlink()
+    return new_key
 
 
 def rename_audio(key, name):

@@ -138,7 +138,11 @@ function drawLibrary() {
     const preview = document.createElement('button'); preview.textContent = 'Preview';
     preview.id = 'preview-' + audio.id; preview.setAttribute('aria-label','Preview ' + name.textContent);
     preview.onclick = () => previewSound({id:audio.id}, row);
-    actions.append(preview,rename,remove);
+    const replace = document.createElement('button'); replace.textContent = 'Replace';
+    replace.id = 'replace-' + audio.id;
+    replace.setAttribute('aria-label','Replace audio of ' + name.textContent);
+    replace.onclick = () => chooseReplacement(audio);
+    actions.append(preview,rename,remove,replace);
     row.append(name,actions); $('library-files').append(row);
   }
   if (!model.audio.length) $('library-files').textContent='No imported sounds.';
@@ -220,14 +224,28 @@ $('refresh').onclick = () => run('Workspaces refreshed.',load);
 $('enabled').onchange = () => run('Playback setting saved.',async () => {await request('/enabled',{enabled:$('enabled').checked});await load();});
 $('reset').onclick = () => run('All sounds reset to default. You can undo this reset.',async () => {savedRules = structuredClone(model.settings.rules);await request('/reset',{});await load();$('undo').hidden = false;});
 $('undo').onclick = () => run('Previous sound choices restored.',async () => {await request('/restore',{rules:savedRules});await load();$('undo').hidden = true;});
+function audioContent(file) {
+  if (!(/\.(mp3|wav)$/i).test(file.name) || file.size > 20*1024*1024) throw new Error('Choose an MP3 or WAV file up to 20 MB.');
+  return new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result.split(',')[1]);reader.onerror = () => reject(new Error('The file could not be read.'));reader.readAsDataURL(file);});
+}
 function importAudio(file) {
   if (!file) return;
   return run('Audio imported. Select it for any status below.',async () => {
-  if (!file || !(/\.(mp3|wav)$/i).test(file.name) || file.size > 20*1024*1024) throw new Error('Choose an MP3 or WAV file up to 20 MB.');
-  const content = await new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve(reader.result.split(',')[1]);reader.onerror = () => reject(new Error('The file could not be read.'));reader.readAsDataURL(file);});
+  const content = await audioContent(file);
   await request('/upload',{name:file.name,content});$('upload').value = '';await load();
   });
 };
+function replaceAudio(audio, file) {
+  if (!file) return;
+  return run('Sound replaced. Its name and workspace choices are kept.',async () => {
+    const content = await audioContent(file);
+    const {id} = await request('/replace',{id:audio.id,name:file.name,content});
+    if (id === audio.id) return 'That file is already this sound’s audio. Nothing changed.';
+    closePreview();
+    for (const choices of Object.values(savedRules || {})) for (const status of Object.keys(choices)) if (choices[status] === audio.id) choices[status] = id;
+    await load(); $('replace-' + id)?.focus();
+  }, 'Replacing…');
+}
 load().catch(error => { $('error').textContent=error.message; $('error').hidden=false; });
 
 $('uninstall').onclick = () => {
@@ -240,17 +258,21 @@ $('uninstall').onclick = () => {
   });
 };
 
-$('upload').onchange = () => importAudio($('upload').files[0]);
-$('choose-audio').onclick = async () => {
-  if (!window.showOpenFilePicker) {$('upload').click();return;}
+async function pickAudio(fallbackInput, use) {
+  if (!window.showOpenFilePicker) {fallbackInput.click();return;}
   try {
     const [handle] = await window.showOpenFilePicker({startIn:'downloads',types:[{description:'Audio files',accept:{'audio/mpeg':['.mp3'],'audio/wav':['.wav']}}],excludeAcceptAllOption:true,multiple:false});
-    await importAudio(await handle.getFile());
+    await use(await handle.getFile());
   } catch (error) {
     if (error.name === 'AbortError') return;
     $('error').textContent = 'The file picker could not open. Try again. ' + error.message; $('error').hidden = false;
   }
-};
+}
+let replaceTarget;
+$('upload').onchange = () => importAudio($('upload').files[0]);
+$('choose-audio').onclick = () => pickAudio($('upload'), importAudio);
+$('replace-upload').onchange = () => {const file = $('replace-upload').files[0]; $('replace-upload').value = ''; return replaceAudio(replaceTarget, file);};
+function chooseReplacement(audio) {replaceTarget = audio; return pickAudio($('replace-upload'), file => replaceAudio(audio, file));}
 
 $('relaunch').onclick = () => run('', async () => {
   closePreview();
