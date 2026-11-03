@@ -82,6 +82,111 @@ class MedleyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 core.remove_audio(invalid)
 
+    def test_replace_swaps_the_audio_and_keeps_the_name_and_every_use(self):
+        import hashlib
+        first = (core.ROOT / 'assets/done.mp3').read_bytes()
+        second = (core.ROOT / 'assets/request.mp3').read_bytes()
+        key = core.import_audio('on-disk-name.mp3', first)
+        core.rename_audio(key, 'My chime')
+        core.set_rule('w1', 'done', key)
+        core.set_rule('w2', 'idle', key)
+        core.set_rule('w2', 'working', 'none')
+        core.set_status_mute('w1', 'done', True)
+        before = core.settings()
+        new_key = core.replace_audio(key, 'a-different-file-name.mp3', second)
+        self.assertEqual(new_key, hashlib.sha256(second).hexdigest())
+        self.assertEqual(core.library(), [{'id': new_key, 'name': 'My chime'}])
+        self.assertEqual(json.loads((core.config_dir() / 'library.json').read_text()), {new_key: 'My chime'})
+        self.assertEqual(sorted(path.name for path in (core.config_dir() / 'audio').iterdir()), [new_key + '.mp3'])
+        after = core.settings()
+        self.assertEqual(after['rules'], {'w1': {'done': new_key}, 'w2': {'idle': new_key, 'working': 'none'}})
+        self.assertEqual(after['mutes'], before['mutes'])
+        self.assertEqual(core.resolve(after, 'w2', 'idle').read_bytes(), second)
+        with self.assertRaises(ValueError):
+            core.set_rule('w1', 'done', key)
+
+    def test_replace_without_any_workspace_use_leaves_settings_alone(self):
+        key = core.import_audio('unused.mp3', (core.ROOT / 'assets/done.mp3').read_bytes())
+        core.set_rule('w1', 'working', 'none')
+        before = (core.config_dir() / 'settings.json').read_bytes()
+        new_key = core.replace_audio(key, 'unused.mp3', (core.ROOT / 'assets/request.mp3').read_bytes())
+        self.assertEqual((core.config_dir() / 'settings.json').read_bytes(), before)
+        self.assertEqual(core.library(), [{'id': new_key, 'name': 'unused.mp3'}])
+
+    def test_replace_with_the_same_audio_changes_nothing(self):
+        content = (core.ROOT / 'assets/done.mp3').read_bytes()
+        key = core.import_audio('same.mp3', content)
+        core.set_rule('w1', 'done', key)
+        before = (core.settings(), core.library(), sorted((core.config_dir() / 'audio').iterdir()))
+        self.assertEqual(core.replace_audio(key, 'elsewhere.mp3', content), key)
+        self.assertEqual((core.settings(), core.library(), sorted((core.config_dir() / 'audio').iterdir())), before)
+
+    def test_replace_refuses_audio_that_is_already_another_sound(self):
+        first = core.import_audio('first.mp3', (core.ROOT / 'assets/done.mp3').read_bytes())
+        second = core.import_audio('second.mp3', (core.ROOT / 'assets/request.mp3').read_bytes())
+        core.set_rule('w1', 'done', first)
+        before = (core.settings(), core.library(), sorted((core.config_dir() / 'audio').iterdir()))
+        with self.assertRaisesRegex(ValueError, 'already in My Sounds as “second”'):
+            core.replace_audio(first, 'second.mp3', (core.ROOT / 'assets/request.mp3').read_bytes())
+        self.assertEqual((core.settings(), core.library(), sorted((core.config_dir() / 'audio').iterdir())), before)
+        self.assertIn(second, [audio['id'] for audio in core.library()])
+
+    def test_replace_that_fails_part_way_can_be_repeated_to_finish(self):
+        first = (core.ROOT / 'assets/done.mp3').read_bytes()
+        second = (core.ROOT / 'assets/request.mp3').read_bytes()
+        for failing_write in (1, 2, 3):
+            with self.subTest(failing_write=failing_write):
+                root = core.config_dir()
+                key = core.import_audio('Alpha.mp3', first)
+                core.set_rule('w1', 'done', key)
+                real, calls = core.write_json, []
+                def flaky(path, data):
+                    calls.append(path.name)
+                    if len(calls) == failing_write:
+                        raise OSError('disk full')
+                    real(path, data)
+                with patch.object(core, 'write_json', flaky):
+                    with self.assertRaises(OSError):
+                        core.replace_audio(key, 'x.mp3', second)
+                self.assertTrue(all(not audio['name'].endswith('.mp3') or audio['name'] == 'Alpha.mp3' for audio in core.library()))
+                new_key = core.replace_audio(key, 'x.mp3', second)
+                self.assertEqual(core.library(), [{'id': new_key, 'name': 'Alpha.mp3'}])
+                self.assertEqual(core.settings()['rules'], {'w1': {'done': new_key}})
+                self.assertEqual(sorted(path.name for path in (root / 'audio').iterdir()), [new_key + '.mp3'])
+                core.remove_audio(new_key)
+
+    def test_replace_rejects_bad_requests_and_leaves_the_sound_untouched(self):
+        first = (core.ROOT / 'assets/done.mp3').read_bytes()
+        second = (core.ROOT / 'assets/request.mp3').read_bytes()
+        key = core.import_audio('keep.mp3', first)
+        core.set_rule('w1', 'done', key)
+        before = (core.settings(), core.library(), sorted((core.config_dir() / 'audio').iterdir()))
+        for target, name, content in [('../../file', 'new.mp3', second), (None, 'new.mp3', second), ('0' * 64, 'new.mp3', second),
+                                      (key, 'new.txt', second), (key, None, second), (key, 'new.mp3', b''),
+                                      (key, 'new.mp3', b'invalid audio'), (key, 'new.wav', b'not a wav'),
+                                      (key, 'new.mp3', b'x' * (core.MAX_AUDIO + 1))]:
+            with self.subTest(target=target, name=name, size=len(content)):
+                with self.assertRaises(ValueError):
+                    core.replace_audio(target, name, content)
+        self.assertEqual((core.settings(), core.library(), sorted((core.config_dir() / 'audio').iterdir())), before)
+        self.assertEqual(core.resolve(core.settings(), 'w1', 'done').read_bytes(), first)
+
+    def test_replace_accepts_a_wav_and_stores_it_as_mp3(self):
+        import io
+        import wave
+        stream = io.BytesIO()
+        with wave.open(stream, 'wb') as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(16000)
+            wav.writeframes(b'\x00\x00' * 1600)
+        key = core.import_audio('Ding.mp3', (core.ROOT / 'assets/done.mp3').read_bytes())
+        new_key = core.replace_audio(key, 'recording.WAV', stream.getvalue())
+        audio = core.config_dir() / 'audio' / (new_key + '.mp3')
+        result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'json', str(audio)], capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout)['streams'][0]['codec_name'], 'mp3')
+        self.assertEqual(core.library(), [{'id': new_key, 'name': 'Ding.mp3'}])
+
     def test_wav_import_converts_to_mp3(self):
         import io
         import wave

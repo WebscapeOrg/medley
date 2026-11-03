@@ -1027,3 +1027,33 @@ selected workspace. Settings, library, audio, access-key and herdr-config hashes
 were unchanged. The settings service retained PID 2408920 and herdr retained PID
 4430. Static assets are read from the linked checkout per request, so this
 browser-only update requires a page refresh and no process restart.
+
+## Replace a sound — 2026-11-03
+
+Request: a **Replace** button after Remove in My Sounds that asks for a file and swaps it in for the
+sound's audio, keeping the entry's own name, not the file's name on disk.
+
+Behaviour checked:
+
+- The upload is validated and converted exactly like an import (the check was split out of
+  `import_audio`; a 17-case comparison against the previous code by the verifier found no change except
+  that a non-string file name is now a plain error instead of a server error).
+- The sound keeps its name, every workspace and status that used it keeps using it (now with the new audio),
+  mutes are untouched, the old audio file is deleted, and the file name chosen on disk is never stored.
+- Choosing the sound's current audio again changes nothing and says so. Audio already held by a differently
+  named sound is refused with that sound's name, and nothing changes.
+- A failure at each of the three writes leaves no hash-named entry, and repeating the replace finishes it.
+- An open preview closes; a pending Undo reset is rewritten to the new audio so it still works; focus lands on
+  the new Replace button. A 404 from an older server shows the existing Relaunch message.
+- Layout: four buttons no longer fit beside a name below about 1440px (two columns) or 770px (one column),
+  so the buttons move under the name; under 475px they form a 2×2 grid. Measured at 19 widths with no
+  overlap, no horizontal scroll and no button under 44px high.
+
+Runs: `python3 -m unittest discover -s tests` (67 tests, exit 0) and `npm test` (Chromium, exit 0). Changing
+the rule rewrite in a scratch copy made the Chromium suite fail, so the new assertions do bite.
+
+Independent hostile verification (separate agent, scratch directories only): no data-loss or correctness bug
+in the shipped paths. It found the part-way failure and hash-named-entry window (fixed as above), the
+"Sound replaced" message after a no-op (fixed), and two known limits left as they are. A status change
+landing in the few milliseconds of a replace can miss that one clip, the same window Remove has. Undo reset
+after a replace done in another tab says the saved choices are invalid, as it already does after Remove.

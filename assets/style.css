@@ -38,3 +38,7 @@ button[data-unavailable=true]:disabled{cursor:default}
 @media(min-width:641px){@container workspace (max-width:43em){section[aria-labelledby=rules-heading]{grid-template-columns:150px minmax(0,1fr)}.rule-actions,#workspace-mute{grid-column:2}.rule-actions{justify-content:flex-end}}}
 @media(min-width:1200px){@container workspace (max-width:87em){section[aria-labelledby=rules-heading]{grid-template-columns:150px minmax(0,1fr)}.rule-actions,#workspace-mute{grid-column:2}.rule-actions{justify-content:flex-end}}}
 @media(max-width:640px){.rule-actions{grid-column:1/-1}.rule-actions button{flex:1}.workspace-row{gap:12px}#workspace-mute{grid-column:1}}
+
+.library-file{flex-wrap:wrap}.library-file>span{flex:1 1 11rem}
+@media(max-width:640px){.library-file>span{flex-basis:100%}}
+@media(max-width:475px){.library-file>.sound-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}}

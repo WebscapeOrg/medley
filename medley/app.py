@@ -142,6 +142,9 @@ def serve(open_browser=True, port=DEFAULT_PORT):
                     core.update(lambda settings: settings.update(rules=rules))
                 elif self.path == '/upload':
                     core.import_audio(data['name'], base64.b64decode(data['content'], validate=True))
+                elif self.path == '/replace':
+                    self.reply(200, {'ok': True, 'id': core.replace_audio(data['id'], data['name'], base64.b64decode(data['content'], validate=True))})
+                    return
                 elif self.path == '/preview':
                     if 'id' in data:
                         if data['id'] not in {audio['id'] for audio in core.library()}:
