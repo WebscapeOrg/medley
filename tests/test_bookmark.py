@@ -23,7 +23,8 @@ class BookmarkTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        self.environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=self.directory.name)
+        self.environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=self.directory.name,
+                                HERDR_PLUGIN_STATE_DIR=str(Path(self.directory.name) / 'state'))
         self.environment.pop('MEDLEY_RELAUNCH_TOKEN', None)
         fake = self.root / 'herdr'
         fake.write_text('#!' + sys.executable + '\nprint(\'{"result":{"workspaces":[]}}\')\n')
@@ -129,4 +130,4 @@ class BookmarkTests(unittest.TestCase):
     def test_command_defaults_to_fixed_port(self):
         with patch.object(sys, 'argv', ['medley.py', 'settings', '--no-browser']), patch.object(app, 'serve') as serve:
             app.main()
-        serve.assert_called_once_with(False, app.DEFAULT_PORT)
+        serve.assert_called_once_with(False, app.DEFAULT_PORT, poll_remote=True)

@@ -25,7 +25,7 @@ class RelaunchTests(unittest.TestCase):
             original = settings.read_bytes()
             config = root / 'herdr.toml'
             config.write_text('[ui.sound]\nenabled=false\n')
-            environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=directory,
+            environment = dict(os.environ, HERDR_PLUGIN_CONFIG_DIR=directory, HERDR_PLUGIN_STATE_DIR=str(root / 'state'),
                                HERDR_CONFIG_PATH=str(config), HERDR_BIN_PATH=str(fake_herdr))
             environment.pop('MEDLEY_RELAUNCH_TOKEN', None)
             process = subprocess.Popen([sys.executable, str(core.ROOT / 'medley.py'), 'settings', '--no-browser', '--port', '0'],

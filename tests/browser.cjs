@@ -39,6 +39,27 @@ assert.ok(columns.right>columns.left);assert.equal(columns.gap,20);assert.equal(
 const headingLayout=await page.evaluate(()=>{const title=document.querySelector('h1').getBoundingClientRect();const settings=document.querySelector('.settings-controls').getBoundingClientRect();const library=document.querySelector('section[aria-labelledby="library-heading"]').getBoundingClientRect();const workspaceHeading=document.getElementById('rules-heading').getBoundingClientRect();const refresh=document.getElementById('refresh').getBoundingClientRect();const soundsHeading=document.getElementById('library-heading').getBoundingClientRect();const upload=document.getElementById('choose-audio').getBoundingClientRect();return {settingsX:settings.x,libraryX:library.x,titleX:title.x,titleY:title.y,settingsBottom:settings.bottom,workspaceSameRow:Math.abs(workspaceHeading.y+workspaceHeading.height/2-refresh.y-refresh.height/2)<12,soundsSameRow:Math.abs(soundsHeading.y+soundsHeading.height/2-upload.y-upload.height/2)<12};});
 assert.ok(headingLayout.settingsX>headingLayout.titleX);assert.ok(headingLayout.titleY<headingLayout.settingsBottom);assert.ok(headingLayout.workspaceSameRow);assert.ok(headingLayout.soundsSameRow);
 
+assert.deepEqual(await page.locator('#workspace option').allTextContents(),['Example project','Research','Example machine → Remote project']);
+assert.equal(await page.locator('#machine-note').isVisible(),false);
+await page.locator('#workspace').selectOption('Example machine/w1');assert.equal(await page.locator('#status-done').inputValue(),'default');
+await page.locator('#status-done').selectOption('none');await page.getByText('Sound saved.',{exact:true}).waitFor();
+await page.evaluate(()=>load());
+assert.equal(await page.locator('#workspace').inputValue(),'Example machine/w1');assert.equal(await page.locator('#status-done').inputValue(),'none');
+await page.locator('#workspace').selectOption('w1');assert.equal(await page.locator('#status-done').inputValue(),'default');
+await page.locator('#workspace').selectOption('Example machine/w1');
+assert.equal(await page.locator('#workspace-mute').textContent(),'Mute all');await page.locator('#workspace-mute').click();await page.getByText('Muted. Saved sound choices are kept.',{exact:true}).waitFor();
+assert.equal(await page.locator('#status-done').inputValue(),'none');
+await page.locator('#workspace').selectOption('w1');assert.equal(await page.locator('#workspace-mute').textContent(),'Mute all');
+await page.locator('#workspace').selectOption('Example machine/w1');
+assert.equal(await page.locator('#workspace-mute').textContent(),'Unmute all');await page.locator('#workspace-mute').click();await page.getByText('Unmuted. Saved sound choices restored.',{exact:true}).waitFor();
+await page.getByRole('button',{name:'Reset Done to default',exact:true}).click();await page.getByText('Sound reset to default.',{exact:true}).waitFor();
+await page.locator('#workspace').selectOption('w1');
+await page.evaluate(()=>{model.machines=[{machine:'Spare machine',error:'ssh: Could not resolve hostname spare.local'}];drawMachineNotes();});
+assert.equal(await page.locator('#machine-note').textContent(),'Spare machine can’t be reached right now.');
+assert.match(await page.locator('#machine-note').getAttribute('title'),/^Spare machine: ssh: Could not resolve hostname/);
+await page.evaluate(()=>{model.machines=[{machine:'Example machine',error:'timed out'}];drawMachineNotes();});
+assert.equal(await page.locator('#machine-note').textContent(),'Example machine can’t be reached right now, so its workspaces are listed as last seen.');
+await page.evaluate(()=>{model.machines=[];drawMachineNotes();});assert.equal(await page.locator('#machine-note').isVisible(),false);
 await page.evaluate(()=>{model.audio=Array.from({length:7},(_,i)=>({id:'example'+i,name:'Example sound '+i+(i===2?' with a longer label that wraps':'')}));drawLibrary();});
 async function checkAlignedRows() {
   const differences=await page.evaluate(()=>{const left=[...document.querySelectorAll('.workspace-row,.rule')].map(el=>el.getBoundingClientRect());const right=[...document.querySelectorAll('.library-file')].map(el=>el.getBoundingClientRect());return left.map((row,i)=>Math.max(Math.abs(row.y-right[i].y),Math.abs(row.height-right[i].height)));});
@@ -46,6 +67,10 @@ async function checkAlignedRows() {
 }
 for (const width of [1200,1280,1600]) {await page.setViewportSize({width,height:1000});await checkAlignedRows();}
 await page.setViewportSize({width:1280,height:1000});
+await page.evaluate(()=>{model.machines=[{machine:'Example machine',error:'timed out'}];drawMachineNotes();});
+assert.equal(await page.locator('#machine-note').isVisible(),true);await checkAlignedRows();
+assert.ok(await page.evaluate(()=>{const note=document.getElementById('machine-note').getBoundingClientRect(),select=document.getElementById('workspace').getBoundingClientRect(),first=document.querySelector('.rule').getBoundingClientRect();return note.top>=select.bottom&&note.bottom<=first.top;}));
+await page.evaluate(()=>{model.machines=[];drawMachineNotes();});assert.equal(await page.locator('#machine-note').isVisible(),false);await checkAlignedRows();
 await page.getByRole('button',{name:'Preview Done sound',exact:true}).click();
 await page.locator('#feedback').waitFor({state:'hidden'});await checkAlignedRows();
 await page.locator('#workspace').selectOption('w2');await checkAlignedRows();

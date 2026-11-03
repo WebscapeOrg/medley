@@ -10,11 +10,16 @@ from medley.app import serve
 
 with tempfile.TemporaryDirectory() as directory:
     os.environ['HERDR_PLUGIN_CONFIG_DIR'] = directory
+    os.environ['HERDR_PLUGIN_STATE_DIR'] = str(Path(directory) / 'state')
     os.environ['HERDR_CONFIG_PATH'] = str(Path(directory) / 'herdr.toml')
     Path(os.environ['HERDR_CONFIG_PATH']).write_text('[ui.sound]\n')
     core.workspaces = lambda: [
         {'workspace_id': 'w1', 'label': 'Example project', 'agent_status': 'idle'},
         {'workspace_id': 'w2', 'label': 'Research', 'agent_status': 'working'},
     ]
+    core.remote_workspaces = lambda: [
+        {'workspace_id': 'Example machine/w1', 'label': 'Example machine \u2192 Remote project', 'agent_status': 'idle', 'machine': 'Example machine'},
+    ]
+    core.remote_problems = lambda: []
     core.uninstall = lambda: core.update(lambda data: data.update(enabled=False))
     serve(False, port=0)
