@@ -204,6 +204,7 @@ class RemotePollTests(RemoteFixture):
         stop = threading.Event()
         with patch.object(core, 'REMOTE_LOCK_RETRY_SECONDS', 0.1):
             thread = threading.Thread(target=core.poll_remote_forever, args=(stop,), daemon=True)
+            self.addCleanup(thread.join, 10)
             self.addCleanup(stop.set)
             thread.start()
             time.sleep(0.8)
@@ -307,6 +308,7 @@ class RemotePollTests(RemoteFixture):
     def test_poller_thread_stops_when_asked(self):
         stop = threading.Event()
         thread = threading.Thread(target=core.poll_remote_forever, args=(stop,), daemon=True)
+        self.addCleanup(thread.join, 10)
         self.addCleanup(stop.set)
         self.workspaces('Voyager', ('w1', 'Voyager', 'idle'))
         thread.start()
