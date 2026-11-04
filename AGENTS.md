@@ -125,7 +125,51 @@ If a question comes up partway, ask it as an open question the Pickle way: follo
 
 **Every iPhone app tells Dave what an update changes for him before he takes it.** When a newer build of an iPhone app is ready, the app shows the friendly update notice in code/standards/mobile-app ("Updates: the notice"): one sentence on what the update changes for Dave, counted from the version he has to the one offered, with Details, Snooze, Skip and Update, and its notes in Resources/whats-new.json, one entry per version. Copy Caboodle for iPhone's files rather than building a variant, so every app tells him the same way and he can put an update off or skip it.
 
+**Fix the instance now and the root cause so it does not recur.** When something is broken or stalled, fix the immediate case and also find and fix the cause, then report both. If an agent stops at a diagnosis or only clears the symptom, Dave has to come back and ask for the root cause and the fix separately.
+
+**Answer Dave's hobnob message in hobnob, every question in it.** When Dave messages you on hobnob, reply to him on hobnob and answer each question he asked, even if the reply is only to say you have started. A message that shows as delivered and gets no reply looks to Dave like a dead session, so he has to chase it or ask another agent whether you are online.
+
+**Apps show a problem only when it is genuine and lasting.** In an app's own screens, show a warning or status only when there is a real, ongoing problem the user can notice or help fix, and hide transient errors, internal counters and intermediate states. Dave keeps finding false alarms and sync noise on main screens and has to ask for them to be removed one at a time.
+
 **Tools and agents don't rely on ~/Downloads for ongoing work.** Keep anything an agent or tool needs on an ongoing basis, such as guides, patches and working data, in the tool's or repo's own folder and not in ~/Downloads. Downloads is for downloads, and its archiver moves files out of it, which once left every agent unable to read its guides.
+
+**Full-screen image viewers handle pinch, pan, double-tap and swipe.** Any full-screen photo viewer in Dave's apps lets him pan after zooming, double-tap to zoom in and out, and swipe between images without the image moving up or down. Viewers built without this came back as bugs in Marmalade and Caboodle.
+
+**Name the checks only Dave's device can do; look for a harness first.** When the simulator or test rig cannot exercise a gesture, permission or Lock Screen path, first check whether a sibling agent already has a harness that can (XCUITest drives real drags and taps). If none exists, say plainly in the recap which checks only Dave's phone can do. Untried gestures shipped as done let Dave find a context menu that lifted every row and a search field that stayed 9 points open.
+
+**Test against the real shape of production, not a tidy stand-in.** Probe and test with the real script, the real server's answer, or a recorded response. Confirm the run selected and executed tests, and that an assertion fails without the fixture. Simplified test units, hand-written fixtures and zero-test runs passed while proving nothing about what production does.
+
+**A failure must leave a trace, never silence.** Build installers, retry loops, watchers and hooks so that a failure exits non-zero, writes a log line or failed row, and reports when a loop gives up. When a loop you started ends, go and look at it. Silent failures left a build off the phone, a watcher that never fired for a month, and sessions stuck on a spent account with nothing in the log.
+
+**In a checkout other agents share, stage only your own hunk.** In a repo another agent also edits (another agent's repo, ~/code/standards), run git status and git diff immediately before git add, and stage only your own hunk with git apply --cached, or wait and ask the owner. Staging the whole file has published other agents' unfinished edits under your name, and a revert would also rewrite their working copy.
+
+**Verify irreversible outward actions by reading, never by acting again.** Before a send, a deletion or an attachment that reaches a real person, open and read the actual thing (the document's holder and bank, the draft's labels), and confirm a send by reading the thread back, never by sending a probe or cleaning up afterwards. Texts, deleted mail and wrong documents cannot be recalled once they leave.
+
+**Do the outside errand for Dave; don't hand it back as a chore.** When a task needs someone outside contacted, a login done or a payment made, the agent finds a way to do it on Dave's behalf (writing to the shop, a password manager filling the form, an approve button) instead of telling Dave to ring, chase or set it up himself, because a chore handed back defeats the point of delegating it.
+
+**Reply to an agent FYI only when you add a finding or need action.** When a hobnob message from another agent is informational and changes nothing for your app, read it and stay silent instead of acknowledging it. Courtesy replies trigger further replies from every agent in the group, and these loops spent hours of agent time on threads that had no decision or new evidence.
+
+**A green check counts only if it ran cases that could fail.** Before you count a test, benchmark or verification gate as passed, confirm that it ran a non-zero number of cases, measured something real and has assertions that fail against the broken behaviour, for example by running them against the old code. A check that selects zero tests, skips silently or can never fail reports green over broken work.
+
+**File a carrot first when Dave asks in your terminal.** When Dave asks for something directly in your terminal, open a carrot for yourself with his words before you start. Terminal-handed work is otherwise invisible in Caboodle, so he cannot see it was asked for or done.
+
+**Put what Dave must do or decide in a tracked place.** When Dave has to decide something or run something, file it as a Pickle question, a Legwork task or a todo with the full commands, not only in a chat reply or report. Items left only in chat were lost or went unanswered for days, and Dave had to ask for them again.
+
+**Check a command's output before parsing it as JSON.** Check the exit status and look at a sample of a command's output before piping it into a JSON parser or indexing into it. Empty output from a failed fetch only shows up as "Expecting value: line 1 column 1", which hides the real error, and a guessed shape fails with a list-versus-dict error, so each case costs a retry.
+
+**Check a Python module is installed before importing it.** Enterprise's system Python lacks common modules such as numpy, openpyxl, bs4 and python-docx, so check for a module or use a venv before writing a script that imports it. Agents repeatedly wrote scripts that failed on the first import and had to be rewritten.
+
+**Take who and when from the primary record, and keep corrections.** When a report says who did something or when it happened, take it from the primary record: the API's event log, the session that made the commit, the author of the thread. Do not take it from a proxy such as a file's modification time or the last agent who posted about it. Once someone corrects such a fact, use the corrected version in every later report, because the morning report and other agents copy what you said and a wrong name or time keeps coming back.
+
+**A claim of 'all' or 'none' says what was searched.** Before saying everything is closed, nothing writes a table, or a feature never fired, search the whole space the claim covers, and name what you searched in the claim. If you cannot search all of it, narrow the sentence. A claim of absence that rests on a partial search goes into emails and decisions and has to be taken back.
+
+**Link Dave to the lasting install address, not a temporary one.** In notes and messages, give Dave the app's permanent install address. Do not use a temporary served port or a page with a time limit. Temporary pages close when the session ends, and their ports get reused by other apps, so the link stops working or opens the wrong app.
+
+**Check each verifier finding against evidence before acting on it.** Treat a hostile verifier's findings as claims to check against the code, screenshots or measurements, not as orders, because the verifier is also wrong at times. A finding acted on unchecked can undo correct work, and one dismissed unchecked can let a real bug ship.
+
+**An iPhone build reuses its app's provisioning profile.** Building one of Dave's iPhone apps reuses that app's existing provisioning profile while it is still valid (active, a development profile, carrying the current signing certificate, listing every registered device, lasting as long as the certificate, and granting every entitlement the app is signed with), and makes a new one only when one of those has changed. A new profile per build piles up on his iPhone, because a phone keeps every profile it is given: on 3 November 2026 it held 702, one per build since October, and every family app said "No Longer Available" until the phone was restarted. If that happens again, ask Dave to restart the iPhone first.
+
+**Keep a private TMPDIR short, outside the Claude scratchpad.** When a test or tool run needs a private TMPDIR, make it with `mktemp -d /tmp/<name>-XXXXXX` and remove it afterwards, rather than pointing TMPDIR into your Claude scratchpad. Programs create Unix sockets in TMPDIR, and a socket path can be at most 107 bytes; every scratchpad path is longer than the 62 characters that leaves Chromium, so headless Chromium (Playwright, Selenium, --print-to-pdf) aborts at start with 'Socket path too long' and leaves a crash report. That happened nine times on 3 and 4 November 2026, in Medley's, Marmalade's and Harmony's runs.
 
 Ask `folklore ask <topic>` for the rule behind any of these, and `folklore show F-NNN` for where it came from.
 
