@@ -3,3 +3,10 @@ __pycache__/
 .coverage
 
 node_modules/
+
+# Agents' working notes stay on this machine only.
+docs/agent-closed-tasks.md
+docs/agent-open-tasks.md
+docs/open-questions.md
+docs/settled-questions.md
+docs/github-support-old-commits.md
